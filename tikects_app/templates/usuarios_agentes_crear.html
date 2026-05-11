@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div class="container mt-5">
+        <!-- Título -->
+        <h1 class="text-center text-primary mb-4">
+            <i class="fas fa-user-plus me-2"></i> Crear Agente
+        </h1>
+
+        <!-- Formulario de registro -->
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <form action="" method="POST" class="shadow p-4 rounded bg-light">
+                    {% csrf_token %}
+                    
+                    <!-- Campo Nombre -->
+                    <div class="mb-3">
+                        <label for="nombre" class="form-label">Nombre:</label>
+                        <input type="text" name="nombre" id="nombre" class="form-control" placeholder="Ingresa el nombre del agente" required>
+                    </div>
+                    
+                    <!-- Campo Apellido -->
+                    <div class="mb-3">
+                        <label for="apellido" class="form-label">Apellido:</label>
+                        <input type="text" name="apellido" id="apellido" class="form-control" placeholder="Ingresa el apellido del agente" required>
+                    </div>
+
+                    <!-- Campo Nombre de Usuario -->
+                    <div class="mb-3">
+                        <label for="nombre_usuario" class="form-label">Nombre de Usuario:</label>
+                        <input type="text" name="nombre_usuario" id="nombre_usuario" class="form-control" placeholder="Ejemplo: prodriguez" required>
+                    </div>
+
+                    <!-- Campo Email -->
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email:</label>
+                        <input type="email" name="email" id="email" class="form-control" placeholder="correo@ejemplo.com" required>
+                    </div>
+
+                    <!-- Campo Contraseña -->
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Contraseña:</label>
+                        <input type="password" name="password" id="password" class="form-control" placeholder="Crea una contraseña segura" required>
+                    </div>
+
+                    <!-- Campo Teléfono -->
+                    <div class="mb-3">
+                        <label for="telefono" class="form-label">Teléfono:</label>
+                        <input type="tel" name="telefono" id="telefono" class="form-control" placeholder="Ingresa el número de teléfono">
+                    </div>
+
+                    <!-- Campo Rol
+                    <div class="mb-3">
+                        <label for="rol" class="form-label">Rol:</label>
+                        <select name="rol" id="rol" class="form-select">
+                            <option value="agente">Agente</option>
+                            <option value="supervisor">Supervisor</option>
+                            <option value="administrador">Administrador</option>
+                        </select>
+                    </div> -->
+
+                    <!-- Botón Enviar -->
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-primary btn-lg">
+                            <i class="fas fa-check-circle me-2"></i> Registrar Agente
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+{% endblock %}
