@@ -1,161 +1,137 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Sistema de Gestión de Tickets para EMVEPRO OTIC, facilitando la gestión eficiente de solicitudes y soporte técnico.">
-    <meta name="author" content="Equipo de Desarrollo EMVEPRO OTIC">
+    <title>{% block title %}EMVEPRO - Gestión de Tickets{% endblock %}</title>
     
-    {% load static %}
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'tikects_app/styles.css' %}">
-    
-    <!-- Google Fonts -->
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
-    
-    <!-- Bootstrap CSS -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    
-    <!-- Font Awesome -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
-    
-    <title>EMVEPRO OTIC - {% block title %}Sistema de Gestión de Tickets{% endblock %}</title>
-    <link rel="shortcut icon" href="{% static 'tikects_app/favicon.ico' %}" type="image/x-icon">
 </head>
 <body>
-    <!-- Barra de navegación corporativa -->
-    <nav class="navbar navbar-expand-lg">
-        <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="fas fa-ticket-alt"></i> EMVEPRO OTIC 
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav ms-auto">
-                    {% if user.is_authenticated %}
-                        <!-- Notificaciones -->
-                        {% block notifications %}
-                        <li class="nav-item dropdown">
-                            <a class="nav-link dropdown-toggle notification-bell" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown">
-                                <i class="fas fa-bell"></i>
-                                <span class="badge">!</span>
-                            </a>
-                            <ul class="dropdown-menu dropdown-menu-end">
-                                {% for notificacion in notificaciones %}
-                                    {% if notificacion.agente.usuario == request.user and notificacion.leida == False %}
-                                        <li>
-                                            <a class="dropdown-item" href="{% url 'detalle_tikect' notificacion.tikect.id %}">
-                                                <small class="text-muted d-block">{{ notificacion.fecha_notificacion|date:"d/m/Y H:i" }}</small>
-                                                <span>{{ notificacion.descripcion|truncatechars:40 }}</span>
-                                            </a>
-                                        </li>
-                                    {% endif %}
-                                {% empty %}
-                                    <li class="dropdown-item text-muted">No hay notificaciones</li>
-                                {% endfor %}
-                            </ul>
-                        </li>
-                        {% endblock %}
 
-                        <!-- Menú según rol -->
+    <div class="app-container">
+        
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <img src="{% static 'tikects_app/logo_emvepro.png' %}" alt="EMVEPRO Logo" class="img-fluid">
+                <h6 class="mt-2 mb-0 text-white">Mesa de Ayuda</h6>
+            </div>
+
+            <ul class="nav flex-column sidebar-menu">
+                {% if user.is_authenticated %}
+                    
+                    {% if user.is_superuser or user.agente %}
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'pagina_principal' %}">
+                                <i class="fas fa-inbox"></i> Panel Principal
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'mesa_triage' %}">
+                                <i class="fas fa-filter"></i> Mesa de Triage
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'ver_tikects_asignados_agentes' %}">
+                                <i class="fas fa-ticket-alt"></i> Mis Tickets Asignados
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'tikects_estadisticas' %}">
+                                <i class="fas fa-chart-line"></i> Estadísticas
+                            </a>
+                        </li>
                         {% if user.is_superuser %}
-                            <li class="nav-item">
-                                <a class="nav-link {% if request.path == '/' %}active{% endif %}" href="{% url 'pagina_principal' %}">INICIO</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">TICKETS</a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'crear_tikects' %}">CREAR TICKET</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'ver_tikects' %}">LISTA DE TICKETS</a></li>
-                                </ul>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'configuracion' %}">CONFIGURACIÓN</a>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'mesa_triage' %}">
-                                    <i class="fas fa-stethoscope me-1"></i> TRIAGE
-                                </a>
-                            </li>
-                        {% elif user.agente %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'pagina_principal' %}">INICIO</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">TICKETS</a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'crear_tikects' %}">CREAR TICKET</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'ver_tikects_asignados_agentes' %}">MIS TICKETS</a></li>
-                                </ul>
-                            </li>
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'mesa_triage' %}">
-                                    <i class="fas fa-stethoscope me-1"></i> TRIAGE
-                                </a>
-                            </li>
-                        {% else %}
-                            <li class="nav-item">
-                                <a class="nav-link" href="{% url 'pagina_principal_clientes' %}">INICIO</a>
-                            </li>
-                            <li class="nav-item dropdown">
-                                <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">TICKETS</a>
-                                <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="{% url 'crear_tikects' %}">CREAR TICKET</a></li>
-                                    <li><a class="dropdown-item" href="{% url 'ver_mis_tikects' %}">MIS TICKETS</a></li>
-                                </ul>
-                            </li>
+                        <li class="nav-item mt-3">
+                            <small class="px-4 text-uppercase text-white-50 fw-bold" style="font-size: 0.75rem;">Administración</small>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'configuracion' %}">
+                                <i class="fas fa-cogs"></i> Configuración
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'usuarios_agentes' %}">
+                                <i class="fas fa-users-cog"></i> Agentes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'clientes' %}">
+                                <i class="fas fa-users"></i> Clientes
+                            </a>
+                        </li>
                         {% endif %}
 
-                        <!-- Usuario -->
+                    {% else %}
                         <li class="nav-item">
-                            <span class="nav-link">
-                                <i class="fas fa-user-circle"></i> {{ request.user.username|upper }}
-                            </span>
+                            <a class="nav-link" href="{% url 'pagina_principal_clientes' %}">
+                                <i class="fas fa-home"></i> Mi Panel
+                            </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{% url 'cerrar_sesion' %}">
-                                <i class="fas fa-sign-out-alt"></i> SALIR
+                            <a class="nav-link" href="{% url 'ver_mis_tikects' %}">
+                                <i class="fas fa-folder-open"></i> Mis Tickets
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="{% url 'crear_tikects_clientes' %}">
+                                <i class="fas fa-plus-circle"></i> Nuevo Ticket
                             </a>
                         </li>
                     {% endif %}
-                </ul>
-            </div>
-        </div>
-    </nav>
+                {% endif %}
+            </ul>
+        </nav>
 
-    <!-- Mensajes -->
-    {% if messages %}
-    <div class="container mt-3">
-        {% for message in messages %}
-        <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        <div class="main-content">
+            
+            <header class="topbar">
+                <div class="topbar-left d-flex align-items-center">
+                    <h5 class="mb-0 text-secondary d-none d-md-block">Sistema de Gestión Tickpro 2.0</h5>
+                </div>
+                
+                <div class="topbar-right d-flex align-items-center">
+                    {% if user.is_authenticated %}
+                        <div class="dropdown">
+                            <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="fas fa-user-circle text-primary me-2"></i>
+                                {{ user.first_name|default:user.username }}
+                            </button>
+                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenu">
+                                <li><a class="dropdown-item" href="#"><i class="fas fa-id-badge me-2 text-secondary"></i> Mi Perfil</a></li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
+                            </ul>
+                        </div>
+                    {% endif %}
+                </div>
+            </header>
+
+            <main class="content-wrapper">
+                
+                {% if messages %}
+                    <div class="container-fluid mb-3">
+                        {% for message in messages %}
+                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                {% block content %}
+                {% endblock %}
+                
+            </main>
         </div>
-        {% endfor %}
     </div>
-    {% endif %}
 
-    <!-- Contenido principal -->
-    <main>
-        {% block content %}
-        {% endblock %}
-    </main>
-
-    <!-- Footer -->
-    <footer class="bg-light text-center py-3 mt-5 border-top">
-        <div class="container">
-            <p class="mb-0 text-muted small">
-                <i class="fas fa-ticket-alt me-2"></i> Sistema de Gestión de Tickets v1.0
-                <br>
-                <span class="text-muted">© {% now "Y" %} Todos los derechos reservados</span>
-            </p>
-        </div>
-    </footer>
-
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    
+    {% block extra_js %}{% endblock %}
 </body>
 </html>
