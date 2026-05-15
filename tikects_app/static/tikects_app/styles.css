@@ -1,1 +1,131 @@
-/* Estilos temporales */
+/* =========================================
+   VARIABLES INSTITUCIONALES EMVEPRO
+   ========================================= */
+:root {
+    --emvepro-blue: #003366; /* Azul Principal */
+    --emvepro-accent: #00509e; /* Azul de realce */
+    --sidebar-bg: #1a252f; /* Un tono más oscuro para contraste tipo Outlook */
+    --bg-main: #f8f9fa;
+    --border-color: #e0e4e8;
+    --text-main: #333;
+}
+
+/* =========================================
+   ESTRUCTURA GLOBAL
+   ========================================= */
+body {
+    font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    overflow: hidden; /* Evita doble scroll */
+}
+
+.app-container {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+}
+
+/* =========================================
+   SIDEBAR (BARRA LATERAL)
+   ========================================= */
+.sidebar {
+    width: 250px;
+    background-color: var(--sidebar-bg);
+    display: flex;
+    flex-direction: column;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    z-index: 1000;
+}
+
+.sidebar-header {
+    padding: 25px 15px;
+    text-align: center;
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+.sidebar-header img {
+    max-height: 50px; /* Evita que el logo sea gigante */
+    width: auto;
+    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
+}
+
+.sidebar-menu {
+    padding: 10px 0;
+    list-style: none;
+    margin: 0;
+}
+
+.nav-link {
+    color: #bdc3c7;
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    font-size: 0.95rem;
+}
+
+.nav-link i {
+    width: 25px;
+    font-size: 1.1rem;
+    margin-right: 12px;
+    text-align: center;
+}
+
+.nav-link:hover {
+    background-color: rgba(255,255,255,0.05);
+    color: #fff;
+}
+
+.nav-link.active {
+    background-color: var(--emvepro-accent);
+    color: white;
+    font-weight: 600;
+}
+
+.sidebar-section-title {
+    padding: 15px 20px 5px;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: #7f8c8d;
+    font-weight: bold;
+}
+
+/* =========================================
+   CONTENIDO Y TOPBAR
+   ========================================= */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topbar {
+    background: #fff;
+    height: 65px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px;
+}
+
+.content-wrapper {
+    padding: 30px;
+    overflow-y: auto;
+    background-color: var(--bg-main);
+    height: calc(100vh - 65px);
+}
+
+/* Botones con estilo institucional */
+.btn-primary {
+    background-color: var(--emvepro-blue);
+    border-color: var(--emvepro-blue);
+}
+
+.btn-primary:hover {
+    background-color: var(--emvepro-accent);
+}
