@@ -10,6 +10,8 @@ from django.utils import timezone
 from django.contrib import messages
 from django.core.mail import send_mail
 from django.conf import settings
+from django.db.models import Count, F, Avg, DurationField
+from django.db.models.functions import TruncMonth, TruncWeek
 
 from .models import (
     Tickets_Colas, Tickets_Servicios, Tickets_Respuestas_Automaticas,
@@ -1131,6 +1133,27 @@ def tikects_estadisticas(request):
     tikects_por_mes_cerrados = Tickets.objects.filter(estado='cerrado').annotate(month=TruncMonth('fecha_cierre')).values('month').annotate(count=Count('id')).order_by('month')
     tikects_por_semana_cerrados = Tickets.objects.filter(estado='cerrado').annotate(week=TruncWeek('fecha_cierre')).values('week').annotate(count=Count('id')).order_by('week')
 
+    # --- NUEVO: Cálculo del Tiempo Promedio de Resolución (SLA) ---
+    tickets_resueltos = Tickets.objects.filter(estado='cerrado', fecha_cierre__isnull=False)
+    tiempo_promedio = 0
+    if tickets_resueltos.exists():
+        promedio_td = tickets_resueltos.aggregate(
+            avg_time=Avg(F('fecha_cierre') - F('fecha_creacion'))
+        )['avg_time']
+        if promedio_td:
+            # Convertimos el timedelta a horas
+            tiempo_promedio = round(promedio_td.total_seconds() / 3600, 1)
+    # -------------------------------------------------------------
+
+    # --- NUEVO: Datos para nuevos gráficos ---
+    tickets_por_prioridad = list(Tickets.objects.values('prioridad').annotate(count=Count('id')))
+    tickets_por_cola = list(Tickets.objects.values('cola__nombre').annotate(count=Count('id')).exclude(cola__isnull=True))
+    # -------------------------------------------------------------
+
+    servicios = Tickets.objects.values('servicio__nombre').annotate(count=Count('servicio'))
+    tikects_por_dia_cerrados = Tickets.objects.filter(estado='cerrado').values('fecha_cierre__date').annotate(count=Count('id')).order_by('fecha_cierre__date')
+    tikects_por_mes_cerrados = Tickets.objects.filter(estado='cerrado').annotate(month=TruncMonth('fecha_cierre')).values('month').annotate(count=Count('id')).order_by('month')
+    tikects_por_semana_cerrados = Tickets.objects.filter(estado='cerrado').annotate(week=TruncWeek('fecha_cierre')).values('week').annotate(count=Count('id')).order_by('week')
     # Tickets cerrados por agente
     tikects_por_agente = []
     try:
@@ -1161,6 +1184,9 @@ def tikects_estadisticas(request):
         'tikects_abiertos': tikects_abiertos,
         'porcentaje_abiertos': porcentaje_abiertos,
         'porcentaje_cerrados': porcentaje_cerrados,
+        'tiempo_promedio': tiempo_promedio, # Pasamos la variable
+        'tickets_por_prioridad': tickets_por_prioridad, # Nueva data
+        'tickets_por_cola': tickets_por_cola,           # Nueva data
         'servicios': list(servicios),
         'tikects_por_dia_cerrados': list(tikects_por_dia_cerrados),
         'tikects_por_mes_cerrados': list(tikects_por_mes_cerrados),
