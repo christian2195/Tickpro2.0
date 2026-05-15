@@ -2,130 +2,82 @@
    VARIABLES INSTITUCIONALES EMVEPRO
    ========================================= */
 :root {
-    --emvepro-blue: #003366; /* Azul Principal */
+    --emvepro-blue: #003366; /* Azul Marino Principal */
     --emvepro-accent: #00509e; /* Azul de realce */
-    --sidebar-bg: #1a252f; /* Un tono más oscuro para contraste tipo Outlook */
-    --bg-main: #f8f9fa;
-    --border-color: #e0e4e8;
-    --text-main: #333;
+    --bg-main: #f4f6f9; /* Gris claro de fondo general */
 }
 
-/* =========================================
-   ESTRUCTURA GLOBAL
-   ========================================= */
 body {
+    background-color: var(--bg-main);
     font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-main);
-    color: var(--text-main);
-    overflow: hidden; /* Evita doble scroll */
-}
-
-.app-container {
-    display: flex;
-    height: 100vh;
-    width: 100vw;
 }
 
 /* =========================================
-   SIDEBAR (BARRA LATERAL)
+   BARRA DE NAVEGACIÓN SUPERIOR (NAVBAR)
    ========================================= */
-.sidebar {
-    width: 250px;
-    background-color: var(--sidebar-bg);
-    display: flex;
-    flex-direction: column;
-    box-shadow: 2px 0 10px rgba(0,0,0,0.1);
-    z-index: 1000;
+.emvepro-navbar {
+    background-color: var(--emvepro-blue);
+    padding-top: 10px;
+    padding-bottom: 10px;
 }
 
-.sidebar-header {
-    padding: 25px 15px;
-    text-align: center;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-}
-
-.sidebar-header img {
-    max-height: 50px; /* Evita que el logo sea gigante */
-    width: auto;
-    filter: drop-shadow(0px 2px 4px rgba(0,0,0,0.5));
-}
-
-.sidebar-menu {
-    padding: 10px 0;
-    list-style: none;
-    margin: 0;
-}
-
-.nav-link {
-    color: #bdc3c7;
-    padding: 12px 20px;
-    display: flex;
-    align-items: center;
-    text-decoration: none;
+.emvepro-navbar .nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500;
     transition: all 0.2s ease;
-    font-size: 0.95rem;
+    border-radius: 5px;
 }
 
-.nav-link i {
-    width: 25px;
-    font-size: 1.1rem;
-    margin-right: 12px;
-    text-align: center;
+.emvepro-navbar .nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
-.nav-link:hover {
-    background-color: rgba(255,255,255,0.05);
-    color: #fff;
-}
-
-.nav-link.active {
-    background-color: var(--emvepro-accent);
-    color: white;
-    font-weight: 600;
-}
-
-.sidebar-section-title {
-    padding: 15px 20px 5px;
-    font-size: 0.7rem;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    color: #7f8c8d;
-    font-weight: bold;
+.emvepro-navbar .dropdown-menu {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
 }
 
 /* =========================================
-   CONTENIDO Y TOPBAR
+   ESTILOS GENERALES (TARJETAS Y BOTONES)
    ========================================= */
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    margin-bottom: 20px;
 }
 
-.topbar {
-    background: #fff;
-    height: 65px;
-    border-bottom: 1px solid var(--border-color);
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 30px;
+.card-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid #ebebeb;
+    font-weight: 600;
+    color: var(--emvepro-blue);
+    border-radius: 8px 8px 0 0 !important;
+    padding: 15px 20px;
 }
 
-.content-wrapper {
-    padding: 30px;
-    overflow-y: auto;
-    background-color: var(--bg-main);
-    height: calc(100vh - 65px);
-}
-
-/* Botones con estilo institucional */
 .btn-primary {
     background-color: var(--emvepro-blue);
     border-color: var(--emvepro-blue);
 }
 
-.btn-primary:hover {
+.btn-primary:hover, .btn-primary:focus {
     background-color: var(--emvepro-accent);
+    border-color: var(--emvepro-accent);
+}
+
+/* Títulos de página */
+.page-header {
+    margin-bottom: 25px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.page-header h1 {
+    color: var(--emvepro-blue);
+    font-size: 1.75rem;
+    font-weight: bold;
+    margin: 0;
 }
