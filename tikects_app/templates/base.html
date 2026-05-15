@@ -4,134 +4,111 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EMVEPRO - Gestión de Tickets{% endblock %}</title>
+    <title>{% block title %}EMVEPRO - Tickpro 2.0{% endblock %}</title>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{% static 'tikects_app/styles.css' %}">
 </head>
-<body>
+<body class="bg-light">
 
-    <div class="app-container">
-        
-        <nav class="sidebar">
-            <div class="sidebar-header">
-                <img src="{% static 'tikects_app/logo_emvepro.png' %}" alt="EMVEPRO Logo" class="img-fluid">
-                <h6 class="mt-2 mb-0 text-white">Mesa de Ayuda</h6>
-            </div>
-
-            <ul class="nav flex-column sidebar-menu">
-                {% if user.is_authenticated %}
-                    
-                    {% if user.is_superuser or user.agente %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'pagina_principal' %}">
-                                <i class="fas fa-inbox"></i> Panel Principal
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'mesa_triage' %}">
-                                <i class="fas fa-filter"></i> Mesa de Triage
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'ver_tikects_asignados_agentes' %}">
-                                <i class="fas fa-ticket-alt"></i> Mis Tickets Asignados
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'estadisticas' %}">
-                                <i class="fas fa-chart-line"></i> Estadísticas
-                            </a>
-                        </li>
-                        {% if user.is_superuser %}
-                        <li class="nav-item mt-3">
-                            <small class="px-4 text-uppercase text-white-50 fw-bold" style="font-size: 0.75rem;">Administración</small>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'configuracion' %}">
-                                <i class="fas fa-cogs"></i> Configuración
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'usuarios_agentes' %}">
-                                <i class="fas fa-users-cog"></i> Agentes
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'clientes' %}">
-                                <i class="fas fa-users"></i> Clientes
-                            </a>
-                        </li>
-                        {% endif %}
-
-                    {% else %}
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'pagina_principal_clientes' %}">
-                                <i class="fas fa-home"></i> Mi Panel
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'ver_mis_tikects' %}">
-                                <i class="fas fa-folder-open"></i> Mis Tickets
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{% url 'crear_tikects_clientes' %}">
-                                <i class="fas fa-plus-circle"></i> Nuevo Ticket
-                            </a>
-                        </li>
-                    {% endif %}
-                {% endif %}
-            </ul>
-        </nav>
-
-        <div class="main-content">
+    <nav class="navbar navbar-expand-lg emvepro-navbar shadow-sm sticky-top">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand d-flex align-items-center" href="{% url 'pagina_principal' %}">
+                <img src="{% static 'tikects_app/logo_emvepro.png' %}" alt="EMVEPRO" height="40" class="me-2 bg-white rounded p-1">
+                <span class="text-white fw-bold d-none d-sm-block">Tickpro 2.0</span>
+            </a>
             
-            <header class="topbar">
-                <div class="topbar-left d-flex align-items-center">
-                    <h5 class="mb-0 text-secondary d-none d-md-block">Sistema de Gestión Tickpro 2.0</h5>
-                </div>
-                
-                <div class="topbar-right d-flex align-items-center">
+            <button class="navbar-toggler border-white text-white" type="button" data-bs-toggle="collapse" data-bs-target="#menuPrincipal">
+                <i class="fas fa-bars"></i>
+            </button>
+
+            <div class="collapse navbar-collapse" id="menuPrincipal">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-4">
                     {% if user.is_authenticated %}
-                        <div class="dropdown">
-                            <button class="btn btn-light dropdown-toggle" type="button" id="userMenu" data-bs-toggle="dropdown" aria-expanded="false">
-                                <i class="fas fa-user-circle text-primary me-2"></i>
-                                {{ user.first_name|default:user.username }}
-                            </button>
-                            <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0" aria-labelledby="userMenu">
-                                <li><a class="dropdown-item" href="#"><i class="fas fa-id-badge me-2 text-secondary"></i> Mi Perfil</a></li>
-                                <li><hr class="dropdown-divider"></li>
-                                <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}"><i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión</a></li>
-                            </ul>
-                        </div>
+                        
+                        {% if user.is_superuser or user.agente %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'pagina_principal' %}"><i class="fas fa-home me-1"></i> Inicio</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'mesa_triage' %}"><i class="fas fa-filter me-1"></i> Triage</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'ver_tikects_asignados_agentes' %}"><i class="fas fa-ticket-alt me-1"></i> Mis Tickets</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'estadisticas' %}"><i class="fas fa-chart-line me-1"></i> Estadísticas</a>
+                            </li>
+                            
+                            {% if user.is_superuser %}
+                            <li class="nav-item dropdown ms-2 border-start border-light ps-2">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminMenu" data-bs-toggle="dropdown">
+                                    <i class="fas fa-cogs me-1"></i> Admin
+                                </a>
+                                <ul class="dropdown-menu shadow-sm">
+                                    <li><a class="dropdown-item" href="{% url 'configuracion' %}">Configuración General</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" href="{% url 'usuarios_agentes' %}">Gestión de Agentes</a></li>
+                                    <li><a class="dropdown-item" href="{% url 'clientes' %}">Gestión de Clientes</a></li>
+                                </ul>
+                            </li>
+                            {% endif %}
+                        
+                        {% else %}
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'pagina_principal_clientes' %}"><i class="fas fa-home me-1"></i> Mi Panel</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'ver_mis_tikects' %}"><i class="fas fa-folder-open me-1"></i> Mis Tickets</a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link" href="{% url 'crear_tikects_clientes' %}"><i class="fas fa-plus-circle me-1"></i> Nuevo Ticket</a>
+                            </li>
+                        {% endif %}
                     {% endif %}
-                </div>
-            </header>
+                </ul>
 
-            <main class="content-wrapper">
-                
-                {% if messages %}
-                    <div class="container-fluid mb-3">
-                        {% for message in messages %}
-                            <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
-                                {{ message }}
-                                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                            </div>
-                        {% endfor %}
-                    </div>
+                {% if user.is_authenticated %}
+                <ul class="navbar-nav">
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle bg-white text-dark rounded px-3 py-1 mt-1" href="#" id="userProfile" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle text-primary me-1"></i> 
+                            {{ user.first_name|default:user.username }}
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <li><a class="dropdown-item text-danger" href="{% url 'cerrar_sesion' %}">
+                                <i class="fas fa-sign-out-alt me-2"></i> Cerrar Sesión
+                            </a></li>
+                        </ul>
+                    </li>
+                </ul>
                 {% endif %}
-
-                {% block content %}
-                {% endblock %}
-                
-            </main>
+            </div>
         </div>
-    </div>
+    </nav>
+
+    <main class="container-fluid px-md-5 py-4">
+        
+        {% if messages %}
+            <div class="row">
+                <div class="col-12">
+                    {% for message in messages %}
+                        <div class="alert alert-{{ message.tags }} alert-dismissible fade show shadow-sm" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        {% endif %}
+
+        {% block content %}
+        {% endblock %}
+        
+    </main>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    
     {% block extra_js %}{% endblock %}
 </body>
 </html>
