@@ -8,6 +8,7 @@ from django.http import HttpResponse, JsonResponse
 from django.core.paginator import Paginator
 from django.utils import timezone
 from django.contrib import messages
+from django.core.mail import send_mail
 from django.conf import settings
 
 from .models import (
@@ -790,6 +791,28 @@ def cerrar_tikect(request, tikect_id):
         tikect.descripcion_solucion = descripcion_solucion
         tikect.cerrado_por_agente = request.user
         tikect.save()
+        
+        # --- NUEVA FUNCIÓN: Envío de correo automático ---
+        if tikect.usuario.email:
+            asunto = f"Ticket Cerrado: #{tikect.id} - {tikect.titulo}"
+            mensaje = (
+                f"Hola {tikect.usuario.first_name},\n\n"
+                f"Tu ticket ha sido marcado como CERRADO.\n"
+                f"Solución aplicada: {descripcion_solucion}\n\n"
+                f"Gracias por contactarnos."
+            )
+            try:
+                send_mail(
+                    asunto,
+                    mensaje,
+                    settings.DEFAULT_FROM_EMAIL,
+                    [tikect.usuario.email],
+                    fail_silently=True,
+                )
+            except Exception as e:
+                print(f"Error enviando correo: {e}")
+        # ---------------------------------------------------
+
         if hasattr(request.user, 'agente'):
             return redirect('ver_tikects_asignados_agentes')
         else:
