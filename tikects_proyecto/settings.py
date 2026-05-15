@@ -95,5 +95,18 @@ STATICFILES_DIRS = [
 
 # 8. Otros
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
-SITE_ID = 1 # Necesario porque tienes 'django.contrib.sites' en INSTALLED_APPS
+SITE_ID = 1 # Necesario porque tienes 'django.contrib.sites' en INSTALLED_APPS}
+
+
+# ============================================
+# CONFIGURACIÓN DE CORREO (SMTP)
+# ============================================
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'  # O el host de correo de tu empresa
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST_USER = 'correo.soporte@tuempresa.com'
+EMAIL_HOST_PASSWORD = 'tu_contraseña_o_app_password'
+DEFAULT_FROM_EMAIL = 'Soporte EMVEPRO <correo.soporte@tuempresa.com>'
+
 
