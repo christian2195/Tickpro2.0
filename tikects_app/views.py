@@ -13,12 +13,7 @@ from django.conf import settings
 from django.db.models import Count, F, Avg, DurationField
 from django.db.models.functions import TruncMonth, TruncWeek
 
-from .models import (
-    Tickets_Colas, Tickets_Servicios, Tickets_Respuestas_Automaticas,
-    Agentes, Cliente, Grupos_Agentes, Agentes_Por_Grupos, Tickets,
-    AsignacionTikects, Grupos_Clientes, ReasignacionTikects,
-    Notificaciones, Direcciones, AgenteGenerico
-)
+from .models import Gerencia, Cliente, Tickets
 
 import openpyxl
 from reportlab.lib.pagesizes import letter
@@ -26,10 +21,10 @@ from reportlab.pdfgen import canvas
 import pandas as pd
 from datetime import datetime
 import os
+import io
 import itertools
 import operator
-
-# Create your views here.
+import unicodedata
 
 # ============================================
 # DECORADORES PERSONALIZADOS
@@ -105,27 +100,16 @@ def pagina_principal(request):
 
     try:
         if user.is_superuser:
-            # Superusuario ve todos los tickets
             ultimos_tickets = Tickets.objects.all().order_by('-fecha_creacion')[:5]
         elif agente:
-            # Agente ve:
-            # 1. Tickets que creó directamente (usuario=user)
-            # 2. Tickets que le fueron reasignados (vía ReasignacionTikects)
-            
-            # Tickets creados por el agente
             tickets_creados = Tickets.objects.filter(usuario=user)
-            
-            # Tickets reasignados al agente
             tickets_reasignados = Tickets.objects.filter(
                 id__in=ReasignacionTikects.objects.filter(
                     agente_nuevo=agente
                 ).values_list('tikect_id', flat=True)
             )
-            
-            # Unir ambos conjuntos, eliminar duplicados y ordenar
             ultimos_tickets = (tickets_creados | tickets_reasignados).distinct().order_by('-fecha_creacion')[:5]
         else:
-            # Cliente ve solo sus tickets
             ultimos_tickets = Tickets.objects.filter(usuario=user).order_by('-fecha_creacion')[:5]
     except Exception as e:
         print(f"Error al obtener tickets: {e}")
@@ -305,12 +289,10 @@ def usuarios_agentes_crear(request):
 
         if nombre and apellido and username and email and password:
             try:
-                # Intentar obtener el usuario existente
                 try:
                     user = User.objects.get(username=username)
                     messages.info(request, f"El usuario {username} ya existe. Se creará solo el perfil de agente.")
                 except User.DoesNotExist:
-                    # Crear nuevo usuario
                     user = User.objects.create_user(
                         username=username,
                         email=email,
@@ -320,7 +302,6 @@ def usuarios_agentes_crear(request):
                     )
                     messages.success(request, f"Usuario {username} creado exitosamente.")
                 
-                # Verificar si ya tiene perfil de agente
                 agente, created = Agentes.objects.get_or_create(
                     usuario=user,
                     defaults={
@@ -349,7 +330,6 @@ def editar_agente(request, agente_id):
     usuario = agente.usuario
 
     if request.method == 'POST':
-        # Obtener datos del formulario
         nombre = request.POST.get('nombre', '').strip()
         apellido = request.POST.get('apellido', '').strip()
         nombre_usuario = request.POST.get('nombre_usuario', '').strip()
@@ -357,14 +337,6 @@ def editar_agente(request, agente_id):
         telefono = request.POST.get('telefono', '').strip()
         nueva_password = request.POST.get('password', '').strip()
 
-        # Debug
-        print(f"=== EDITANDO AGENTE {agente_id} ===")
-        print(f"Nombre: {nombre}")
-        print(f"Apellido: {apellido}")
-        print(f"Username: {nombre_usuario}")
-        print(f"Email: {email}")
-
-        # Validar campos requeridos
         if not nombre or not apellido or not nombre_usuario or not email:
             messages.error(request, "Todos los campos (Nombre, Apellido, Usuario, Email) son obligatorios.")
             return render(request, 'agentes_editar.html', {
@@ -375,7 +347,6 @@ def editar_agente(request, agente_id):
                 'email': email,
             })
 
-        # Validar longitud de contraseña si se proporciona
         if nueva_password and len(nueva_password) < 8:
             messages.error(request, "La contraseña debe tener al menos 8 caracteres.")
             return render(request, 'agentes_editar.html', {
@@ -386,7 +357,6 @@ def editar_agente(request, agente_id):
                 'email': email,
             })
 
-        # Verificar si el nombre de usuario ya existe (excepto si es el mismo)
         if nombre_usuario != usuario.username:
             if User.objects.filter(username=nombre_usuario).exists():
                 messages.error(request, f"El nombre de usuario '{nombre_usuario}' ya está en uso.")
@@ -398,7 +368,6 @@ def editar_agente(request, agente_id):
                     'email': email,
                 })
 
-        # Verificar si el email ya existe (excepto si es el mismo)
         if email != usuario.email:
             if User.objects.filter(email=email).exists():
                 messages.error(request, f"El email '{email}' ya está en uso.")
@@ -411,7 +380,6 @@ def editar_agente(request, agente_id):
                 })
 
         try:
-            # Actualizar el usuario
             usuario.username = nombre_usuario
             usuario.first_name = nombre
             usuario.last_name = apellido
@@ -419,19 +387,15 @@ def editar_agente(request, agente_id):
             if nueva_password:
                 usuario.set_password(nueva_password)
             usuario.save()
-            print(f"✓ Usuario {usuario.username} actualizado")
 
-            # Actualizar el agente
             agente.nombre_usuario = nombre_usuario
             agente.correo = email
             agente.save()
-            print(f"✓ Agente {agente.nombre_usuario} actualizado")
 
             messages.success(request, f"Agente '{nombre_usuario}' actualizado exitosamente.")
             return redirect('usuarios_agentes')
             
         except Exception as e:
-            print(f"❌ Error: {e}")
             messages.error(request, f"Error al actualizar el agente: {str(e)}")
             return render(request, 'agentes_editar.html', {
                 'agente': agente,
@@ -441,7 +405,6 @@ def editar_agente(request, agente_id):
                 'email': email,
             })
 
-    # GET: Mostrar el formulario con los datos actuales
     return render(request, 'agentes_editar.html', {
         'agente': agente,
         'nombre': usuario.first_name,
@@ -458,24 +421,14 @@ def ver_agentes(request):
 @superuser_required
 @login_required
 def eliminar_agente(request, agente_id):
-    """Eliminar un agente y opcionalmente su usuario asociado"""
     agente = get_object_or_404(Agentes, id=agente_id)
-    
     if request.method == 'POST':
         try:
             nombre_usuario = agente.nombre_usuario
-            usuario = agente.usuario
-            
-            # Eliminar el agente primero
             agente.delete()
-            
-            # Opcional: preguntar si también se quiere eliminar el usuario
-            # Por ahora, solo eliminamos el perfil de agente, no el usuario
-            
             messages.success(request, f"Agente '{nombre_usuario}' eliminado exitosamente.")
         except Exception as e:
             messages.error(request, f"Error al eliminar el agente: {str(e)}")
-    
     return redirect('usuarios_agentes')
 
 @superuser_required
@@ -557,13 +510,13 @@ def eliminar_agente_de_grupo(request, grupo_agente_id):
     return redirect('usuarios_por_grupos_agentes')
 
 # ============================================
-# CLIENTES Y DIRECCIONES
+# CLIENTES Y GERENCIAS
 # ============================================
 
 @superuser_required
 @login_required
 def clientes(request):
-    clientes_list = Cliente.objects.all()
+    clientes_list = Cliente.objects.all().order_by('nombre')
     paginator = Paginator(clientes_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -579,7 +532,7 @@ def crear_clientes(request):
         email = request.POST.get('email') or None
         telefono = request.POST.get('telefono') or None
         password = request.POST.get('password')
-        direccion = request.POST.get('direccion')
+        gerencia = request.POST.get('gerencia')
 
         try:
             user = User.objects.create_user(
@@ -595,7 +548,7 @@ def crear_clientes(request):
                 nombre_usuario=username,
                 email=email,
                 telefono=telefono,
-                direccion=direccion,
+                gerencia=gerencia,
                 usuario=user
             )
             return redirect('ver_cliente')
@@ -612,9 +565,9 @@ def editar_cliente(request, cliente_id):
         cliente.apellido = request.POST.get('apellido')
         cliente.nombre_usuario = request.POST.get('nombre_usuario')
         cliente.email = request.POST.get('email') or None
-        cliente.direccion = request.POST.get('direccion')
+        cliente.gerencia = request.POST.get('gerencia')
         password = request.POST.get('password')
-        if password:
+        if password and hasattr(cliente, 'usuario') and cliente.usuario:
             cliente.usuario.set_password(password)
             cliente.usuario.save()
         cliente.save()
@@ -653,49 +606,49 @@ def usuarios_clientes_grupos_crear(request):
 
 @superuser_required
 @login_required
-def ver_direcciones(request):
-    direcciones = Direcciones.objects.all()
-    return render(request, 'direcciones.html', {'direcciones': direcciones})
+def ver_gerencias(request):
+    gerencias = Gerencias.objects.all()
+    return render(request, 'gerencias.html', {'gerencias': gerencias})
 
 @superuser_required
 @login_required
-def crear_direccion(request):
+def crear_gerencia(request):
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
         if nombre and descripcion:
-            Direcciones.objects.create(nombre=nombre, descripcion=descripcion)
-            messages.success(request, 'Dirección creada con éxito.')
-            return redirect('ver_direcciones')
+            Gerencias.objects.create(nombre=nombre, descripcion=descripcion)
+            messages.success(request, 'Gerencia creada con éxito.')
+            return redirect('ver_gerencias')
         else:
             messages.error(request, 'Todos los campos son obligatorios.')
-    return render(request, 'direcciones_crear.html')
+    return render(request, 'gerencias_crear.html')
 
 @superuser_required
 @login_required
-def editar_direccion(request, direccion_id):
-    direccion = get_object_or_404(Direcciones, id=direccion_id)
+def editar_gerencia(request, gerencia_id):
+    gerencia = get_object_or_404(Gerencias, id=gerencia_id)
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
         if nombre and descripcion:
-            direccion.nombre = nombre
-            direccion.descripcion = descripcion
-            direccion.save()
-            messages.success(request, 'Dirección actualizada.')
-            return redirect('ver_direcciones')
+            gerencia.nombre = nombre
+            gerencia.descripcion = descripcion
+            gerencia.save()
+            messages.success(request, 'Gerencia actualizada.')
+            return redirect('ver_gerencias')
         else:
             messages.error(request, 'Todos los campos son obligatorios.')
-    return render(request, 'editar_direccion.html', {'direccion': direccion})
+    return render(request, 'editar_gerencia.html', {'gerencia': gerencia})
 
 @superuser_required
 @login_required
-def eliminar_direccion(request, direccion_id):
-    direccion = get_object_or_404(Direcciones, id=direccion_id)
+def eliminar_gerencia(request, gerencia_id):
+    gerencia = get_object_or_404(Gerencias, id=gerencia_id)
     if request.method == 'POST':
-        direccion.delete()
-        messages.success(request, 'Dirección eliminada.')
-    return redirect('ver_direcciones')
+        gerencia.delete()
+        messages.success(request, 'Gerencia eliminada.')
+    return redirect('ver_gerencias')
 
 # ============================================
 # TICKETS - VISTAS PRINCIPALES
@@ -794,15 +747,9 @@ def cerrar_tikect(request, tikect_id):
         tikect.cerrado_por_agente = request.user
         tikect.save()
         
-        # --- NUEVA FUNCIÓN: Envío de correo automático ---
-        if tikect.usuario.email:
+        if tikect.usuario and tikect.usuario.email:
             asunto = f"Ticket Cerrado: #{tikect.id} - {tikect.titulo}"
-            mensaje = (
-                f"Hola {tikect.usuario.first_name},\n\n"
-                f"Tu ticket ha sido marcado como CERRADO.\n"
-                f"Solución aplicada: {descripcion_solucion}\n\n"
-                f"Gracias por contactarnos."
-            )
+            mensaje = f"Hola {tikect.usuario.first_name},\n\nTu ticket ha sido marcado como CERRADO.\nSolución aplicada: {descripcion_solucion}\n\nGracias por contactarnos."
             try:
                 send_mail(
                     asunto,
@@ -813,7 +760,6 @@ def cerrar_tikect(request, tikect_id):
                 )
             except Exception as e:
                 print(f"Error enviando correo: {e}")
-        # ---------------------------------------------------
 
         if hasattr(request.user, 'agente'):
             return redirect('ver_tikects_asignados_agentes')
@@ -825,72 +771,48 @@ def cerrar_tikect(request, tikect_id):
 def reasignar_tikect(request, tikect_id):
     tikect = get_object_or_404(Tickets, id=tikect_id)
     
-    # Mensaje de depuración
-    print(f"=== REASIGNACIÓN DEL TICKET {tikect_id} ===")
-    print(f"Usuario: {request.user.username}")
-    
     try:
         agente_actual = Agentes.objects.get(usuario=request.user)
-        print(f"Agente actual encontrado: {agente_actual.nombre_usuario} (ID: {agente_actual.id})")
     except Agentes.DoesNotExist:
-        print("ERROR: El usuario no tiene un perfil de agente asociado")
         messages.error(request, "No tienes permisos para reasignar tickets. No eres un agente.")
         return redirect('detalle_tikect', tikect_id=tikect.id)
 
-    # Verificar si el ticket ya fue reasignado a este agente
     if ReasignacionTikects.objects.filter(tikect=tikect, agente_nuevo=agente_actual).exists():
-        print("ERROR: El ticket ya fue reasignado a este agente")
         messages.error(request, "Este ticket ya ha sido reasignado.")
         return render(request, 'reasignar_tikects.html', {
             'tikect': tikect,
             'error': 'Este ticket ya ha sido reasignado.'
         })
 
-    # Buscar el grupo del agente actual
     grupo_agente_actual = Agentes_Por_Grupos.objects.filter(agente=agente_actual).first()
-    print(f"Grupo del agente: {grupo_agente_actual.grupo.nombre if grupo_agente_actual else 'NO ENCONTRADO'}")
-    
     if not grupo_agente_actual:
-        print("ERROR: El agente no pertenece a ningún grupo")
         messages.error(request, "No perteneces a ningún grupo. No puedes reasignar tickets.")
         return redirect('detalle_tikect', tikect_id=tikect.id)
 
-    # Buscar agentes del mismo grupo (excluyendo al actual)
     agentes_grupo = Agentes.objects.filter(
         agentes_por_grupos__grupo=grupo_agente_actual.grupo
     ).exclude(id=agente_actual.id)
-    
-    print(f"Agentes en el grupo: {agentes_grupo.count()}")
-    for agente in agentes_grupo:
-        print(f"  - {agente.nombre_usuario} (ID: {agente.id})")
 
     if request.method == 'POST':
         nuevo_agente_id = request.POST.get('nuevo_agente')
-        print(f"POST: nuevo_agente_id = {nuevo_agente_id}")
-        
         if not nuevo_agente_id:
             messages.error(request, "Debe seleccionar un agente para reasignar.")
             return redirect('reasignar_tikect', tikect_id=tikect.id)
         
         try:
             nuevo_agente = Agentes.objects.get(id=nuevo_agente_id)
-            print(f"Nuevo agente encontrado: {nuevo_agente.nombre_usuario}")
         except Agentes.DoesNotExist:
-            print(f"ERROR: No existe agente con ID {nuevo_agente_id}")
             messages.error(request, "El agente seleccionado no existe.")
             return redirect('reasignar_tikect', tikect_id=tikect.id)
         
-        # Crear la reasignación
         ReasignacionTikects.objects.create(
             tikect=tikect,
             agente_anterior=agente_actual,
             agente_nuevo=nuevo_agente
         )
-        print("✓ Reasignación creada exitosamente")
         
-        # Crear notificación
         Notificaciones.objects.create(
-            tikect=tikect,
+            tikect=ticket,
             agente=nuevo_agente,
             descripcion=f"Ticket reasignado desde {agente_actual.nombre_usuario}"
         )
@@ -898,7 +820,6 @@ def reasignar_tikect(request, tikect_id):
         messages.success(request, f"Ticket reasignado exitosamente a {nuevo_agente.nombre_usuario}")
         return redirect('ver_tikects_asignados_agentes')
 
-    # GET: Mostrar el formulario
     return render(request, 'reasignar_tikects.html', {
         'tikect': tikect,
         'agentes_grupo': agentes_grupo
@@ -937,11 +858,11 @@ def crear_tikects_clientes(request):
     if request.method == 'GET':
         servicios = Tickets_Servicios.objects.all()
         colas = Tickets_Colas.objects.all()
-        direcciones = Direcciones.objects.all()
+        gerencias = Gerencias.objects.all()
         return render(request, 'tikects_crear.html', {
             'servicios': servicios,
             'colas': colas,
-            'direcciones': direcciones,
+            'gerencias': gerencias,
         })
     elif request.method == 'POST':
         titulo = request.POST.get('titulo')
@@ -952,7 +873,6 @@ def crear_tikects_clientes(request):
 
         cola = get_object_or_404(Tickets_Colas, id=cola_id)
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
-
         cliente = Cliente.objects.filter(usuario=usuario).first()
 
         nuevo_tikect = Tickets.objects.create(
@@ -973,7 +893,7 @@ def crear_tikects_clientes(request):
                     usuario_creador=usuario,
                     agente=asignacion.agente_actual
                 )
-        except AsignacionTikects.DoesNotExist:
+        except:
             pass
 
         return redirect('ver_mis_tikects')
@@ -984,11 +904,11 @@ def crear_tikects(request):
     if request.method == 'GET':
         servicios = Tickets_Servicios.objects.all()
         colas = Tickets_Colas.objects.all()
-        direcciones = Direcciones.objects.all()
+        gerencias = Gerencias.objects.all()
         return render(request, 'tikects_crear.html', {
             'servicios': servicios,
             'colas': colas,
-            'direcciones': direcciones
+            'gerencias': gerencias
         })
     elif request.method == 'POST':
         titulo = request.POST.get('titulo')
@@ -1000,27 +920,13 @@ def crear_tikects(request):
         cola = get_object_or_404(Tickets_Colas, id=cola_id)
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
 
-        nuevo_tikect = Tickets.objects.create(
+        Tickets.objects.create(
             titulo=titulo,
             descripcion=descripcion,
             cola=cola,
             servicio=servicio,
             usuario=usuario,
         )
-
-        # Notificación desactivada por ahora (AsignacionTikects no tiene campo servicio)
-        # try:
-        #     asignacion = AsignacionTikects.objects.get(servicio=servicio)
-        #     if asignacion.agente_actual:
-        #         Notificaciones.objects.create(
-        #             tikect=nuevo_tikect,
-        #             descripcion=f"Nuevo ticket '{titulo}'",
-        #             usuario_creador=usuario,
-        #             agente=asignacion.agente_actual
-        #         )
-        # except AsignacionTikects.DoesNotExist:
-        #     pass
-
         return redirect('ver_tikects')
     return redirect('crear_tikects')
 
@@ -1133,7 +1039,6 @@ def tikects_estadisticas(request):
     tikects_por_mes_cerrados = Tickets.objects.filter(estado='cerrado').annotate(month=TruncMonth('fecha_cierre')).values('month').annotate(count=Count('id')).order_by('month')
     tikects_por_semana_cerrados = Tickets.objects.filter(estado='cerrado').annotate(week=TruncWeek('fecha_cierre')).values('week').annotate(count=Count('id')).order_by('week')
 
-    # --- NUEVO: Cálculo del Tiempo Promedio de Resolución (SLA) ---
     tickets_resueltos = Tickets.objects.filter(estado='cerrado', fecha_cierre__isnull=False)
     tiempo_promedio = 0
     if tickets_resueltos.exists():
@@ -1141,20 +1046,11 @@ def tikects_estadisticas(request):
             avg_time=Avg(F('fecha_cierre') - F('fecha_creacion'))
         )['avg_time']
         if promedio_td:
-            # Convertimos el timedelta a horas
             tiempo_promedio = round(promedio_td.total_seconds() / 3600, 1)
-    # -------------------------------------------------------------
 
-    # --- NUEVO: Datos para nuevos gráficos ---
     tickets_por_prioridad = list(Tickets.objects.values('prioridad').annotate(count=Count('id')))
     tickets_por_cola = list(Tickets.objects.values('cola__nombre').annotate(count=Count('id')).exclude(cola__isnull=True))
-    # -------------------------------------------------------------
 
-    servicios = Tickets.objects.values('servicio__nombre').annotate(count=Count('servicio'))
-    tikects_por_dia_cerrados = Tickets.objects.filter(estado='cerrado').values('fecha_cierre__date').annotate(count=Count('id')).order_by('fecha_cierre__date')
-    tikects_por_mes_cerrados = Tickets.objects.filter(estado='cerrado').annotate(month=TruncMonth('fecha_cierre')).values('month').annotate(count=Count('id')).order_by('month')
-    tikects_por_semana_cerrados = Tickets.objects.filter(estado='cerrado').annotate(week=TruncWeek('fecha_cierre')).values('week').annotate(count=Count('id')).order_by('week')
-    # Tickets cerrados por agente
     tikects_por_agente = []
     try:
         agentes_ids = Tickets.objects.filter(estado='cerrado').exclude(
@@ -1184,9 +1080,9 @@ def tikects_estadisticas(request):
         'tikects_abiertos': tikects_abiertos,
         'porcentaje_abiertos': porcentaje_abiertos,
         'porcentaje_cerrados': porcentaje_cerrados,
-        'tiempo_promedio': tiempo_promedio, # Pasamos la variable
-        'tickets_por_prioridad': tickets_por_prioridad, # Nueva data
-        'tickets_por_cola': tickets_por_cola,           # Nueva data
+        'tiempo_promedio': tiempo_promedio,
+        'tickets_por_prioridad': tickets_por_prioridad,
+        'tickets_por_cola': tickets_por_cola,
         'servicios': list(servicios),
         'tikects_por_dia_cerrados': list(tikects_por_dia_cerrados),
         'tikects_por_mes_cerrados': list(tikects_por_mes_cerrados),
@@ -1208,7 +1104,7 @@ def exportar_tikects_excel(request):
     ws = wb.active
     ws.title = "Tikects Cerrados"
 
-    headers = ['ID', 'Título', 'Descripción', 'Usuario', 'Servicio', 'Fecha Creación', 'Fecha Cierre', 'Solución', 'Agente que cerró', 'Dirección']
+    headers = ['ID', 'Título', 'Descripción', 'Usuario', 'Servicio', 'Fecha Creación', 'Fecha Cierre', 'Solución', 'Agente que cerró', 'Gerencia']
     ws.append(headers)
 
     for t in tikects:
@@ -1216,13 +1112,13 @@ def exportar_tikects_excel(request):
             t.id,
             t.titulo,
             t.descripcion,
-            t.usuario.username,
+            t.usuario.username if t.usuario else '',
             t.servicio.nombre if t.servicio else '',
             t.fecha_creacion.strftime('%Y-%m-%d %H:%M') if t.fecha_creacion else '',
             t.fecha_cierre.strftime('%Y-%m-%d %H:%M') if t.fecha_cierre else '',
             t.descripcion_solucion or '',
             t.cerrado_por_agente.username if t.cerrado_por_agente else '',
-            t.direccion or ''
+            t.gerencia or ''
         ])
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
@@ -1267,9 +1163,9 @@ def exportar_tikects_pdf(request):
         x_pos = x
         c.drawString(x_pos, y, str(t.id))
         x_pos += col_widths[0]
-        c.drawString(x_pos, y, t.titulo[:30])
+        c.drawString(x_pos, y, t.titulo[:30] if t.titulo else '')
         x_pos += col_widths[1]
-        c.drawString(x_pos, y, t.usuario.username[:15])
+        c.drawString(x_pos, y, t.usuario.username[:15] if t.usuario else '')
         x_pos += col_widths[2]
         c.drawString(x_pos, y, t.servicio.nombre if t.servicio else '')
         x_pos += col_widths[3]
@@ -1291,10 +1187,8 @@ def exportar_tikects_pdf(request):
 @login_required
 def agente_generico(request):
     if request.method == 'GET':
-        # Obtener servicios que NO tienen agente genérico asignado
         servicios_asignados = AgenteGenerico.objects.values_list('servicio_id', flat=True)
         servicios = Tickets_Servicios.objects.exclude(id__in=servicios_asignados)
-        
         agentes = Agentes.objects.all()
         
         return render(request, 'agente_generico.html', {
@@ -1307,12 +1201,10 @@ def agente_generico(request):
         tiempo_reasignacion = request.POST.get('tiempo_reasignacion')
         agente_reasignacion_id = request.POST.get('agente_reasignacion')
         
-        # Validar campos requeridos
         if not servicio_id or not agente_actual_id:
             messages.error(request, "Debe seleccionar un servicio y un agente actual.")
             return redirect('agente_generico')
         
-        # Validar que existan los objetos
         try:
             servicio = Tickets_Servicios.objects.get(id=servicio_id)
         except Tickets_Servicios.DoesNotExist:
@@ -1325,7 +1217,6 @@ def agente_generico(request):
             messages.error(request, "El agente seleccionado no existe.")
             return redirect('agente_generico')
         
-        # Validar agente de reasignación (opcional)
         agente_reasignacion = None
         if agente_reasignacion_id:
             try:
@@ -1334,7 +1225,6 @@ def agente_generico(request):
                 messages.error(request, "El agente de reasignación no existe.")
                 return redirect('agente_generico')
         
-        # Validar tiempo de reasignación
         tiempo = None
         if tiempo_reasignacion:
             try:
@@ -1345,12 +1235,10 @@ def agente_generico(request):
                 messages.error(request, "El tiempo de reasignación debe ser un número positivo.")
                 return redirect('agente_generico')
         
-        # Verificar que el servicio no tenga ya una asignación
         if AgenteGenerico.objects.filter(servicio=servicio).exists():
             messages.error(request, f"El servicio '{servicio.nombre}' ya tiene una asignación de agente genérico.")
             return redirect('agente_generico')
         
-        # Crear la asignación
         AgenteGenerico.objects.create(
             servicio=servicio,
             agente_actual=agente_actual,
@@ -1366,7 +1254,6 @@ def agente_generico(request):
 def ver_agentes_genericos(request):
     asignaciones = AgenteGenerico.objects.select_related('servicio', 'agente_actual', 'agente_reasignacion').all()
     return render(request, 'agentes_genericos_ver.html', {'asignaciones': asignaciones})
-
 
 @superuser_required
 @login_required
@@ -1414,39 +1301,158 @@ def check_notifications(request):
 # CARGA MASIVA (EXCEL)
 # ============================================
 
+def generar_correo_institucional(first_name, last_name):
+    """Limpia los nombres y genera el correo emvepro.gob.ve automáticamente"""
+    nombre = str(first_name).strip().split()[0].lower()
+    apellido = str(last_name).strip().split()[0].lower()
+    
+    nombre = "".join(c for c in unicodedata.normalize('NFD', nombre) if unicodedata.category(c) != 'Mn')
+    apellido = "".join(c for c in unicodedata.normalize('NFD', apellido) if unicodedata.category(c) != 'Mn')
+    
+    nombre = nombre.replace('ñ', 'n')
+    apellido = apellido.replace('ñ', 'n')
+    
+    return f"{nombre}.{apellido}@emvepro.gob.ve"
+
 @superuser_required
 @login_required
 def registrar_usuarios(request):
-    ruta = os.path.join(settings.BASE_DIR, 'usuarios_nuevos.xlsx')
-    error = None
     if request.method == 'POST':
+        if 'archivo_excel' not in request.FILES:
+            messages.error(request, "Por favor, selecciona un archivo Excel.")
+            return redirect('registrar_usuarios')
+            
+        archivo = request.FILES['archivo_excel']
+        
         try:
-            df = pd.read_excel(ruta)
-            required = ['Nombre', 'Apellido', 'usuario', 'Clave', 'Direccion', 'Correo']
+            df = pd.read_excel(archivo)
+            df.columns = [str(col).strip() for col in df.columns]
+            
+            if 'Gerencia' in df.columns and 'Direccion' not in df.columns:
+                df.rename(columns={'Gerencia': 'Direccion'}, inplace=True)
+                
+            required = ['Nombre', 'Apellido', 'usuario', 'Clave', 'Direccion']
             if not all(col in df.columns for col in required):
-                raise ValueError("Columnas incorrectas")
+                messages.error(request, "Estructura incorrecta. El Excel debe tener las columnas: Nombre, Apellido, usuario, Clave y Gerencia.")
+                return redirect('registrar_usuarios')
+            
+            usuarios_creados = 0
             for _, row in df.iterrows():
-                if not User.objects.filter(username=row['usuario']).exists():
+                txt_nombre = str(row['Nombre']).strip()
+                txt_apellido = str(row['Apellido']).strip()
+                username_field = str(row['usuario']).strip()
+                txt_clave = str(row['Clave']).strip()
+                txt_direccion = str(row['Direccion']).strip()
+                
+                if txt_nombre.lower() in ['presidencia', 'vicepresidencia', 'negocios', 'comercio', 'logistica', 'seguridad', 'gerencia de', 'prueba', 'transporte']:
+                    continue
+                if not username_field or username_field.lower() == 'nan':
+                    continue
+
+                if not txt_clave or txt_clave.lower() == 'nan':
+                    txt_clave = "Emvepro2026*"
+                
+                if not User.objects.filter(username=username_field).exists():
+                    correo_automatico = generar_correo_institucional(txt_nombre, txt_apellido)
+                    
                     user = User.objects.create_user(
-                        username=row['usuario'],
-                        password=row['Clave'],
-                        email=row['Correo'],
-                        first_name=row['Nombre'],
-                        last_name=row['Apellido']
+                        username=username_field,
+                        password=txt_clave,
+                        email=correo_automatico,
+                        first_name=txt_nombre,
+                        last_name=txt_apellido
                     )
-                    Cliente.objects.create(
-                        nombre=row['Nombre'],
-                        apellido=row['Apellido'],
-                        nombre_usuario=row['usuario'],
-                        email=row['Correo'],
-                        telefono='000-000-0000',
-                        direccion=row['Direccion'],
-                        usuario=user
+                    
+                    gerencia_obj, _ = Gerencia.objects.get_or_create(
+                        nombre=txt_direccion,
+                        defaults={'descripcion': f'Gerencia de {txt_direccion}'}
                     )
+                    
+                    nombre_completo = f"{txt_nombre} {txt_apellido}"
+                    campos_reales = [f.name for f in Cliente._meta.get_fields()]
+                    
+                    campos_posibles = {
+                        'nombre': nombre_completo,
+                        'primer_nombre': txt_nombre,
+                        'primer_apellido': txt_apellido,
+                        'apellido': txt_apellido,
+                        'nombre_usuario': username_field,
+                        'correo': correo_automatico,
+                        'email': correo_automatico,
+                        'telefono': '000-000-0000',
+                        'gerencia': gerencia_obj,
+                        'usuario': user,
+                    }
+                    
+                    argumentos_validos = {k: v for k, v in campos_posibles.items() if k in campos_reales}
+                    
+                    if 'rif' in campos_reales:
+                        argumentos_validos['rif'] = f"V-{user.id:08d}"
+                    elif 'cedula' in campos_reales:
+                        argumentos_validos['cedula'] = f"{user.id:08d}"
+                        
+                    Cliente.objects.create(**argumentos_validos)
+                    usuarios_creados += 1
+            
+            messages.success(request, f"¡Carga masiva completada! Se registraron {usuarios_creados} usuarios limpios.")
             return redirect('ver_cliente')
+            
         except Exception as e:
-            error = str(e)
-    return render(request, 'registrar_usuarios.html', {'error': error})
+            messages.error(request, f"Error al procesar el archivo: {str(e)}")
+            
+    return render(request, 'registrar_usuarios.html')
+
+
+# =========================================================================
+# 🛠️ EXPORTACIÓN SEGURA CORREGIDA (SIN ATRIBUTO HUÉRFANO Y SIN CAMPO RIF)
+# =========================================================================
+@superuser_required
+@login_required
+def exportar_usuarios_excel(request):
+    """Genera un archivo Excel leyendo la estructura interna real de la tabla Cliente (Sin campo RIF)"""
+    clientes = Cliente.objects.all().order_by('nombre')
+    datos = []
+    
+    for c in clientes:
+        # 1. Descomponemos el nombre completo guardado en la tabla de forma segura
+        bits = c.nombre.split() if c.nombre else []
+        primer_nombre = bits[0].upper() if len(bits) > 0 else "SIN NOMBRE"
+        primer_apellido = bits[1].upper() if len(bits) > 1 else "---"
+        
+        # 2. Deducimos el Login/Usuario partiendo del string de su correo
+        if hasattr(c, 'correo') and c.correo:
+            nombre_usuario = c.correo.split('@')[0]
+        elif hasattr(c, 'email') and c.email:
+            nombre_usuario = c.email.split('@')[0]
+        else:
+            nombre_usuario = f"user_{c.id}"
+            
+        # 3. Extraemos la dirección de correo electrónico institucional
+        correo_institucional = c.correo if hasattr(c, 'correo') else (c.email if hasattr(c, 'email') else 'N/A')
+
+        # 4. Insertamos la fila perfectamente formateada (Eliminado el campo RIF)
+        datos.append({
+            'Nombre': primer_nombre,
+            'Apellido': primer_apellido,
+            'Nombre de Usuario': nombre_usuario,
+            'Correo Institucional': correo_institucional,
+            'Teléfono': c.telefono if (hasattr(c, 'telefono') and c.telefono) else 'N/A',
+            'Gerencia': c.gerencia.nombre if (hasattr(c, 'gerencia') and c.gerencia) else 'Sin Asignar'
+        })
+    
+    df = pd.DataFrame(datos)
+    output = io.BytesIO()
+    with pd.ExcelWriter(output, engine='openpyxl') as writer:
+        df.to_excel(writer, index=False, sheet_name='Clientes EMVEPRO')
+    
+    output.seek(0)
+    response = HttpResponse(
+        output.getvalue(),
+        content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    )
+    response['Content-Disposition'] = 'attachment; filename="clientes_emvepro_exportados.xlsx"'
+    return response
+
 
 @superuser_required
 @login_required
@@ -1491,8 +1497,8 @@ def registrar_tickets_excel(request):
                     fecha_cierre=cerrado_fecha,
                     cola_perteneciente=cola,
                     servicio=servicio,
-                    usuario=cliente.usuario,
-                    direccion=cliente.direccion,
+                    usuario=cliente.usuario if hasattr(cliente, 'usuario') else None,
+                    gerencia=cliente.gerencia,
                     descripcion_solucion=''
                 )
             messages.success(request, "Tickets importados correctamente")

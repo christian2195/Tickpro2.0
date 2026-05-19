@@ -59,16 +59,16 @@
                         </div>
 
                         <div class="row">
-                            <!-- Dirección -->
+                            <!-- Gerencia -->
                             <div class="col-md-12 mb-3">
-                                <label for="direccion" class="form-label">Dirección <span class="text-danger">*</span></label>
-                                <select class="form-select" id="direccion" name="direccion" required>
-                                    <option value="" disabled selected>-- Seleccione una dirección --</option>
-                                    {% for direccion in direcciones %}
-                                        <option value="{{ direccion.nombre }}">{{ direccion.nombre }}</option>
+                                <label for="gerencia" class="form-label">Gerencia <span class="text-danger">*</span></label>
+                                <select class="form-select" id="gerencia" name="gerencia" required>
+                                    <option value="" disabled selected>-- Seleccione una gerencia --</option>
+                                    {% for gerencia in gerencias %}
+                                        <option value="{{ gerencia.nombre }}">{{ gerencia.nombre }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="invalid-feedback">Debe seleccionar una dirección.</div>
+                                <div class="invalid-feedback">Debe seleccionar una gerencia.</div>
                             </div>
                         </div>
 
@@ -119,8 +119,8 @@
 <script>
     // Inicializar Select2
     $(document).ready(function() {
-        $('#direccion').select2({
-            placeholder: "-- Seleccione o escriba una dirección --",
+        $('#gerencia').select2({
+            placeholder: "-- Seleccione o escriba una gerencia --",
             allowClear: true,
             width: '100%'
         });

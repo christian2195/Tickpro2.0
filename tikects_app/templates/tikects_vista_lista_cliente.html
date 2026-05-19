@@ -87,7 +87,7 @@
                                 <th>Fecha</th>
                                 <th>Título</th>
                                 <th>Descripción</th>
-                                <th>Dirección</th>
+                                <th>Gerencia</th>
                                 <th>Servicio</th>
                                 <th>Estado</th>
                                 <th>Acciones</th>
@@ -104,7 +104,7 @@
                                 </td>
                                 <td>{{ tikect.titulo|truncatechars:30 }}</td>
                                 <td>{{ tikect.descripcion|truncatechars:50 }}</td>
-                                <td>{{ tikect.direccion|truncatechars:20 }}</td>
+                                <td>{{ tikect.gerencia|truncatechars:20 }}</td>
                                 <td>{{ tikect.servicio.nombre }}</td>
                                 <td>
                                     {% if tikect.estado == 'cerrado' %}

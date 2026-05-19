@@ -89,7 +89,7 @@ class Agentes_Por_Grupos(models.Model):
 # CLIENTES
 # ============================================
 
-class Direcciones(models.Model):
+class Gerencia(models.Model):
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField()
     fecha_creacion = models.DateTimeField(auto_now_add=True, null=True, blank=True)
@@ -108,7 +108,7 @@ class Cliente(models.Model):
     nombre = models.CharField(max_length=200)
     correo = models.EmailField()
     telefono = models.CharField(max_length=20, blank=True, null=True)
-    direccion = models.ForeignKey(Direcciones, on_delete=models.SET_NULL, null=True)
+    gerencia = models.ForeignKey(Gerencia, on_delete=models.SET_NULL, null=True)
     grupo = models.ForeignKey(Grupos_Clientes, on_delete=models.SET_NULL, null=True)
     fecha_creacion = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
