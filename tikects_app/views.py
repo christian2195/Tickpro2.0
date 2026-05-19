@@ -13,7 +13,14 @@ from django.conf import settings
 from django.db.models import Count, F, Avg, DurationField
 from django.db.models.functions import TruncMonth, TruncWeek
 
-from .models import Gerencia, Cliente, Tickets
+# CORREGIDO: Eliminado 'Gerencias' que causaba el ImportError
+from .models import (
+    Gerencia, Cliente, Tickets, 
+    Agentes, Notificaciones, ReasignacionTikects, 
+    Tickets_Servicios, Tickets_Colas, Tickets_Respuestas_Automaticas,
+    Grupos_Agentes, Agentes_Por_Grupos, Grupos_Clientes, 
+    AsignacionTikects, AgenteGenerico
+)
 
 import openpyxl
 from reportlab.lib.pagesizes import letter
@@ -607,7 +614,8 @@ def usuarios_clientes_grupos_crear(request):
 @superuser_required
 @login_required
 def ver_gerencias(request):
-    gerencias = Gerencias.objects.all()
+    # CORREGIDO: Apunta al modelo real 'Gerencia'
+    gerencias = Gerencia.objects.all()
     return render(request, 'gerencias.html', {'gerencias': gerencias})
 
 @superuser_required
@@ -617,7 +625,8 @@ def crear_gerencia(request):
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
         if nombre and descripcion:
-            Gerencias.objects.create(nombre=nombre, descripcion=descripcion)
+            # CORREGIDO: Apunta al modelo real 'Gerencia'
+            Gerencia.objects.create(nombre=nombre, descripcion=descripcion)
             messages.success(request, 'Gerencia creada con éxito.')
             return redirect('ver_gerencias')
         else:
@@ -627,7 +636,8 @@ def crear_gerencia(request):
 @superuser_required
 @login_required
 def editar_gerencia(request, gerencia_id):
-    gerencia = get_object_or_404(Gerencias, id=gerencia_id)
+    # CORREGIDO: Apunta al modelo real 'Gerencia'
+    gerencia = get_object_or_404(Gerencia, id=gerencia_id)
     if request.method == 'POST':
         nombre = request.POST.get('nombre')
         descripcion = request.POST.get('descripcion')
@@ -644,7 +654,8 @@ def editar_gerencia(request, gerencia_id):
 @superuser_required
 @login_required
 def eliminar_gerencia(request, gerencia_id):
-    gerencia = get_object_or_404(Gerencias, id=gerencia_id)
+    # CORREGIDO: Apunta al modelo real 'Gerencia'
+    gerencia = get_object_or_404(Gerencia, id=gerencia_id)
     if request.method == 'POST':
         gerencia.delete()
         messages.success(request, 'Gerencia eliminada.')
@@ -747,7 +758,7 @@ def cerrar_tikect(request, tikect_id):
         tikect.cerrado_por_agente = request.user
         tikect.save()
         
-        if tikect.usuario and tikect.usuario.email:
+        if tikekt.usuario and tikect.usuario.email:
             asunto = f"Ticket Cerrado: #{tikect.id} - {tikect.titulo}"
             mensaje = f"Hola {tikect.usuario.first_name},\n\nTu ticket ha sido marcado como CERRADO.\nSolución aplicada: {descripcion_solucion}\n\nGracias por contactarnos."
             try:
@@ -769,25 +780,25 @@ def cerrar_tikect(request, tikect_id):
 
 @login_required
 def reasignar_tikect(request, tikect_id):
-    tikect = get_object_or_404(Tickets, id=tikect_id)
+    ticket = get_object_or_404(Tickets, id=tikect_id)
     
     try:
         agente_actual = Agentes.objects.get(usuario=request.user)
     except Agentes.DoesNotExist:
         messages.error(request, "No tienes permisos para reasignar tickets. No eres un agente.")
-        return redirect('detalle_tikect', tikect_id=tikect.id)
+        return redirect('detalle_tikect', tikect_id=ticket.id)
 
-    if ReasignacionTikects.objects.filter(tikect=tikect, agente_nuevo=agente_actual).exists():
+    if ReasignacionTikects.objects.filter(tikect=ticket, agente_nuevo=agente_actual).exists():
         messages.error(request, "Este ticket ya ha sido reasignado.")
         return render(request, 'reasignar_tikects.html', {
-            'tikect': tikect,
+            'tikect': ticket,
             'error': 'Este ticket ya ha sido reasignado.'
         })
 
     grupo_agente_actual = Agentes_Por_Grupos.objects.filter(agente=agente_actual).first()
     if not grupo_agente_actual:
         messages.error(request, "No perteneces a ningún grupo. No puedes reasignar tickets.")
-        return redirect('detalle_tikect', tikect_id=tikect.id)
+        return redirect('detalle_tikect', tikect_id=ticket.id)
 
     agentes_grupo = Agentes.objects.filter(
         agentes_por_grupos__grupo=grupo_agente_actual.grupo
@@ -797,16 +808,16 @@ def reasignar_tikect(request, tikect_id):
         nuevo_agente_id = request.POST.get('nuevo_agente')
         if not nuevo_agente_id:
             messages.error(request, "Debe seleccionar un agente para reasignar.")
-            return redirect('reasignar_tikect', tikect_id=tikect.id)
+            return redirect('reasignar_tikect', tikect_id=ticket.id)
         
         try:
             nuevo_agente = Agentes.objects.get(id=nuevo_agente_id)
         except Agentes.DoesNotExist:
             messages.error(request, "El agente seleccionado no existe.")
-            return redirect('reasignar_tikect', tikect_id=tikect.id)
+            return redirect('reasignar_tikect', tikect_id=ticket.id)
         
         ReasignacionTikects.objects.create(
-            tikect=tikect,
+            tikect=ticket,
             agente_anterior=agente_actual,
             agente_nuevo=nuevo_agente
         )
@@ -821,7 +832,7 @@ def reasignar_tikect(request, tikect_id):
         return redirect('ver_tikects_asignados_agentes')
 
     return render(request, 'reasignar_tikects.html', {
-        'tikect': tikect,
+        'tikect': ticket,
         'agentes_grupo': agentes_grupo
     })
 
@@ -858,7 +869,8 @@ def crear_tikects_clientes(request):
     if request.method == 'GET':
         servicios = Tickets_Servicios.objects.all()
         colas = Tickets_Colas.objects.all()
-        gerencias = Gerencias.objects.all()
+        # CORREGIDO: Apunta al modelo real 'Gerencia'
+        gerencias = Gerencia.objects.all()
         return render(request, 'tikects_crear.html', {
             'servicios': servicios,
             'colas': colas,
@@ -904,7 +916,8 @@ def crear_tikects(request):
     if request.method == 'GET':
         servicios = Tickets_Servicios.objects.all()
         colas = Tickets_Colas.objects.all()
-        gerencias = Gerencias.objects.all()
+        # CORREGIDO: Apunta al modelo real 'Gerencia'
+        gerencias = Gerencia.objects.all()
         return render(request, 'tikects_crear.html', {
             'servicios': servicios,
             'colas': colas,
@@ -931,19 +944,27 @@ def crear_tikects(request):
     return redirect('crear_tikects')
 
 # ============================================
-# TICKETS - VISTAS PARA AGENTES
+# TICKETS - VISTAS PARA AGENTES (CORREGIDAS)
 # ============================================
 
 @login_required
 def ver_tikects_asignados_agentes(request):
     agente_actual = get_object_or_404(Agentes, usuario=request.user)
 
+    # CORREGIDO: Usamos el campo real 'agente' según las opciones del modelo
+    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
+
     tikects_directos = Tickets.objects.filter(usuario=agente_actual.usuario).order_by('-fecha_creacion')
     reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
     tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones]).order_by('-fecha_creacion')
-    tikects_servicios = Tickets.objects.filter(servicio__in=[a.servicio for a in asignaciones_servicios]).order_by('-fecha_creacion')
+    
+    # CORREGIDO: Extraemos el servicio navegando a través del objeto 'tikect' de la asignación
+    servicios_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(servicio_id__in=servicios_ids).order_by('-fecha_creacion')
 
     tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
+    # Eliminamos duplicados manteniendo el orden
+    tikects_list = list(dict.fromkeys(tikects_list))
     tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
 
     paginator = Paginator(tikects_list, 10)
@@ -967,12 +988,19 @@ def ver_tikects_asignados_agentes(request):
 def ver_tikects_asignados_agentes_cerrados(request):
     agente_actual = get_object_or_404(Agentes, usuario=request.user)
 
+    # CORREGIDO: Usamos el campo real 'agente'
+    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
+
     tikects_directos = Tickets.objects.filter(usuario=agente_actual.usuario, estado='cerrado').order_by('-fecha_creacion')
     reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
     tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones], estado='cerrado').order_by('-fecha_creacion')
-    tikects_servicios = Tickets.objects.filter(servicio__in=[a.servicio for a in asignaciones_servicios], estado='cerrado').order_by('-fecha_creacion')
+    
+    # CORREGIDO: Extraemos el servicio desde el objeto 'tikect'
+    servicios_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(servicio_id__in=servicios_ids, estado='cerrado').order_by('-fecha_creacion')
 
     tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
+    tikects_list = list(dict.fromkeys(tikects_list))
     tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
 
     paginator = Paginator(tikects_list, 10)
@@ -996,13 +1024,21 @@ def ver_tikects_asignados_agentes_cerrados(request):
 def ver_tikects_asignados_agentes_abiertos(request):
     agente_actual = get_object_or_404(Agentes, usuario=request.user)
 
+    # CORREGIDO: Usamos el campo real 'agente'
+    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
+
     tikects_directos = Tickets.objects.filter(usuario=agente_actual.usuario).exclude(estado='cerrado').order_by('-fecha_creacion')
     reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
     tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones]).exclude(estado='cerrado').order_by('-fecha_creacion')
-    tikects_servicios = Tickets.objects.filter(servicio__in=[a.servicio for a in asignaciones_servicios]).exclude(estado='cerrado').order_by('-fecha_creacion')
+    
+    # CORREGIDO: Extraemos el servicio desde el objeto 'tikect'
+    servicios_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(servicio_id__in=servicios_ids).exclude(estado='cerrado').order_by('-fecha_creacion')
 
     tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
+    tikects_list = list(dict.fromkeys(tikects_list))
     tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
+    
     paginator = Paginator(tikects_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
@@ -1019,7 +1055,6 @@ def ver_tikects_asignados_agentes_abiertos(request):
         'tikects': page_obj,
         'reasignaciones_dict': reasignaciones_dict
     })
-
 # ============================================
 # ESTADÍSTICAS Y EXPORTACIONES
 # ============================================
@@ -1202,7 +1237,7 @@ def agente_generico(request):
         agente_reasignacion_id = request.POST.get('agente_reasignacion')
         
         if not servicio_id or not agente_actual_id:
-            messages.error(request, "Debe seleccionar un servicio y un agente actual.")
+            messages.error(request, "Debe seleccionar un servicio and un agente actual.")
             return redirect('agente_generico')
         
         try:
@@ -1333,7 +1368,7 @@ def registrar_usuarios(request):
                 
             required = ['Nombre', 'Apellido', 'usuario', 'Clave', 'Direccion']
             if not all(col in df.columns for col in required):
-                messages.error(request, "Estructura incorrecta. El Excel debe tener las columnas: Nombre, Apellido, usuario, Clave y Gerencia.")
+                messages.error(request, "Estructura incorrecta. El Excel debe tener las columnas: Nombre, Apellido, usuario, Clave and Gerencia.")
                 return redirect('registrar_usuarios')
             
             usuarios_creados = 0
@@ -1402,7 +1437,6 @@ def registrar_usuarios(request):
             
     return render(request, 'registrar_usuarios.html')
 
-
 # =========================================================================
 # 🛠️ EXPORTACIÓN SEGURA CORREGIDA (SIN ATRIBUTO HUÉRFANO Y SIN CAMPO RIF)
 # =========================================================================
@@ -1414,12 +1448,10 @@ def exportar_usuarios_excel(request):
     datos = []
     
     for c in clientes:
-        # 1. Descomponemos el nombre completo guardado en la tabla de forma segura
         bits = c.nombre.split() if c.nombre else []
         primer_nombre = bits[0].upper() if len(bits) > 0 else "SIN NOMBRE"
         primer_apellido = bits[1].upper() if len(bits) > 1 else "---"
         
-        # 2. Deducimos el Login/Usuario partiendo del string de su correo
         if hasattr(c, 'correo') and c.correo:
             nombre_usuario = c.correo.split('@')[0]
         elif hasattr(c, 'email') and c.email:
@@ -1427,10 +1459,8 @@ def exportar_usuarios_excel(request):
         else:
             nombre_usuario = f"user_{c.id}"
             
-        # 3. Extraemos la dirección de correo electrónico institucional
         correo_institucional = c.correo if hasattr(c, 'correo') else (c.email if hasattr(c, 'email') else 'N/A')
 
-        # 4. Insertamos la fila perfectamente formateada (Eliminado el campo RIF)
         datos.append({
             'Nombre': primer_nombre,
             'Apellido': primer_apellido,
@@ -1452,7 +1482,6 @@ def exportar_usuarios_excel(request):
     )
     response['Content-Disposition'] = 'attachment; filename="clientes_emvepro_exportados.xlsx"'
     return response
-
 
 @superuser_required
 @login_required
