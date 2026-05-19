@@ -125,7 +125,7 @@ def pagina_principal(request):
     try:
         total_tickets = Tickets.objects.count()
         tickets_abiertos = Tickets.objects.exclude(estado='cerrado').count()
-        tickets_cerrados = Tickets.objects.filter(estado='cerrado').count()
+        tickets_cerrados = Tickets.objects.filter(estado__iexact='cerrado').count()
         total_agentes = Agentes.objects.count()
     except:
         total_tickets = 0
@@ -533,15 +533,35 @@ def clientes(request):
 @login_required
 def crear_clientes(request):
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        apellido = request.POST.get('apellido')
-        username = request.POST.get('username')
-        email = request.POST.get('email') or None
-        telefono = request.POST.get('telefono') or None
-        password = request.POST.get('password')
-        gerencia = request.POST.get('gerencia')
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip() or None
+        telefono = request.POST.get('telefono', '').strip() or None
+        password = request.POST.get('password', '').strip()
+        gerencia_input = request.POST.get('gerencia', '').strip()
+
+        # Validaciones previas en Python
+        if not nombre or not apellido or not username or not password or not gerencia_input:
+            messages.error(request, "Todos los campos marcados como obligatorios deben ser completados.")
+            return render(request, 'usuarios_clientes_crear.html')
+
+        if User.objects.filter(username=username).exists():
+            messages.error(request, f"El nombre de usuario '{username}' ya se encuentra registrado.")
+            return render(request, 'usuarios_clientes_crear.html')
 
         try:
+            # 💡 RESOLUCIÓN INTELIGENTE DE LA GERENCIA
+            # Si el input es numérico (un ID), lo buscamos directo; si es texto, lo buscamos o creamos.
+            if gerencia_input.isdigit():
+                gerencia_obj = get_object_or_404(Gerencia, id=int(gerencia_input))
+            else:
+                gerencia_obj, _ = Gerencia.objects.get_or_create(
+                    nombre=gerencia_input,
+                    defaults={'descripcion': f'Gerencia de {gerencia_input}'}
+                )
+
+            # 1. Creamos el usuario de autenticación en el core de Django
             user = User.objects.create_user(
                 username=username,
                 password=password,
@@ -549,18 +569,23 @@ def crear_clientes(request):
                 last_name=apellido,
                 email=email
             )
+            
+            # 2. Creamos el registro del cliente en tu tabla nativa
             Cliente.objects.create(
-                nombre=nombre,
-                apellido=apellido,
-                nombre_usuario=username,
-                email=email,
+                nombre=f"{nombre} {apellido}",
+                correo=email,
                 telefono=telefono,
-                gerencia=gerencia,
-                usuario=user
+                gerencia=gerencia_obj,
+                user_id=user.id # Enlace uno a uno con el usuario
             )
-            return redirect('ver_cliente')
+            
+            messages.success(request, f"Cliente '{nombre} {apellido}' registrado con éxito.")
+            return redirect('clientes')
+            
         except Exception as e:
-            return render(request, 'usuarios_clientes_crear.html', {'error': str(e)})
+            messages.error(request, f"Error de base de datos al registrar: {str(e)}")
+            return render(request, 'usuarios_clientes_crear.html')
+            
     return render(request, 'usuarios_clientes_crear.html')
 
 @superuser_required
@@ -949,43 +974,60 @@ def crear_tikects(request):
 
 @login_required
 def ver_tikects_asignados_agentes(request):
-    agente_actual = get_object_or_404(Agentes, usuario=request.user)
+    # Contadores dinámicos inyectados para las tarjetas superiores
+    from tikects_app.models import Tickets
+    tickets_totales_agente = Tickets.objects.filter(usuario=request.user)
+    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
+    # Buscamos todos los tickets asignados al usuario resolutor actual
+    # Soportamos tanto si se guardaron en minuscula como en mayuscula
+    from django.core.paginator import Paginator
+    from django.db.models import Q
+    from tikects_app.models import Tickets, ReasignacionTikects
 
-    # CORREGIDO: Usamos el campo real 'agente' según las opciones del modelo
-    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
-
-    tikects_directos = Tickets.objects.filter(usuario=agente_actual.usuario).order_by('-fecha_creacion')
-    reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
-    tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones]).order_by('-fecha_creacion')
+    # Queryset base de los tickets asignados al agente actual
+    tickets_base = Tickets.objects.filter(usuario=request.user).order_by('-fecha_creacion')
     
-    # CORREGIDO: Extraemos el servicio navegando a través del objeto 'tikect' de la asignación
-    servicios_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
-    tikects_servicios = Tickets.objects.filter(servicio_id__in=servicios_ids).order_by('-fecha_creacion')
+    # Contadores dinámicos e inmunes a errores de formato del Excel
+    tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
 
-    tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
-    # Eliminamos duplicados manteniendo el orden
-    tikects_list = list(dict.fromkeys(tikects_list))
-    tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
+    # Manejo de filtros por pestañas si el usuario hace clic en los botones de arriba
+    url_name = request.resolver_match.url_name
+    if url_name == 'ver_tikects_asignados_agentes_cerrados':
+        tickets_filtrados = tickets_base.filter(estado__iexact='cerrado')
+    elif url_name == 'ver_tikects_asignados_agentes_abiertos':
+        tickets_filtrados = tickets_base.exclude(estado__iexact='cerrado')
+    else:
+        tickets_filtrados = tickets_base
 
-    paginator = Paginator(tikects_list, 10)
+    paginator = Paginator(tickets_filtrados, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
+    # Reasignaciones mapeadas de forma segura
     reasignaciones_dict = {}
-    try:
-        for r in ReasignacionTikects.objects.all():
-            if r.agente_nuevo and r.agente_nuevo.usuario:
-                reasignaciones_dict[r.tikect.id] = r.agente_nuevo.usuario.username
-    except:
-        pass
+    for r in ReasignacionTikects.objects.all():
+        if r.agente_nuevo and r.agente_nuevo.usuario:
+            reasignaciones_dict[r.ticket_id] = r.agente_nuevo.nombre_usuario
 
-    return render(request, 'tikects_asignados_agentes.html', {
+    context = {
         'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict
-    })
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados,
+        'reasignaciones_dict': reasignaciones_dict,
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados
+    }
+    return render(request, 'tikects_asignados_agentes.html', context)
 
 @login_required
 def ver_tikects_asignados_agentes_cerrados(request):
+    # Contadores dinámicos inyectados para las tarjetas superiores
+    from tikects_app.models import Tickets
+    tickets_totales_agente = Tickets.objects.filter(usuario=request.user)
+    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
     agente_actual = get_object_or_404(Agentes, usuario=request.user)
 
     # CORREGIDO: Usamos el campo real 'agente'
@@ -1017,11 +1059,18 @@ def ver_tikects_asignados_agentes_cerrados(request):
 
     return render(request, 'tikects_asignados_agentes.html', {
         'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict
+        'reasignaciones_dict': reasignaciones_dict,
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados
     })
 
 @login_required
 def ver_tikects_asignados_agentes_abiertos(request):
+    # Contadores dinámicos inyectados para las tarjetas superiores
+    from tikects_app.models import Tickets
+    tickets_totales_agente = Tickets.objects.filter(usuario=request.user)
+    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
     agente_actual = get_object_or_404(Agentes, usuario=request.user)
 
     # CORREGIDO: Usamos el campo real 'agente'
@@ -1053,7 +1102,9 @@ def ver_tikects_asignados_agentes_abiertos(request):
 
     return render(request, 'tikects_asignados_agentes.html', {
         'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict
+        'reasignaciones_dict': reasignaciones_dict,
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados
     })
 # ============================================
 # ESTADÍSTICAS Y EXPORTACIONES
@@ -1063,7 +1114,7 @@ def ver_tikects_asignados_agentes_abiertos(request):
 @login_required
 def tikects_estadisticas(request):
     total_tikects = Tickets.objects.count()
-    tikects_cerrados = Tickets.objects.filter(estado='cerrado').count()
+    tikects_cerrados = Tickets.objects.filter(estado__iexact='cerrado').count()
     tikects_abiertos = Tickets.objects.exclude(estado='cerrado').count()
     servicios = Tickets.objects.values('servicio__nombre').annotate(count=Count('servicio'))
 
@@ -1486,56 +1537,125 @@ def exportar_usuarios_excel(request):
 @superuser_required
 @login_required
 def registrar_tickets_excel(request):
-    ruta = os.path.join(settings.BASE_DIR, 'LISTA DE TICKETS CERRADOS.xlsx')
+    """Carga masiva de tickets cerrados mediante la subida de un archivo Excel (.xlsx)"""
     if request.method == 'POST':
+        if 'archivo_excel' not in request.FILES:
+            messages.error(request, "Por favor, selecciona un archivo Excel.")
+            return redirect('registrar_tickets_excel')
+            
+        archivo = request.FILES['archivo_excel']
+        
         try:
-            df = pd.read_excel(ruta)
+            # Leemos el archivo subido dinámicamente
+            df = pd.read_excel(archivo)
+            df.columns = [str(col).strip() for col in df.columns]
+            
+            # Verificación de columnas requeridas
+            required = ['Título', 'IDdelcliente', 'Cola', 'Servicio']
+            if not all(col in df.columns for col in required):
+                messages.error(request, "Estructura incorrecta. El Excel debe contener al menos: Título, IDdelcliente, Cola y Servicio.")
+                return redirect('registrar_tickets_excel')
+
+            tickets_importados = 0
             for _, row in df.iterrows():
                 try:
-                    cliente = Cliente.objects.get(email=row['IDdelcliente'])
-                except Cliente.DoesNotExist:
-                    messages.warning(request, f"Cliente {row['IDdelcliente']} no encontrado")
-                    continue
-                try:
-                    cola = Tickets_Colas.objects.get(nombre=row['Cola'])
-                    servicio = Tickets_Servicios.objects.get(nombre=row['Servicio'])
-                except (Tickets_Colas.DoesNotExist, Tickets_Servicios.DoesNotExist):
-                    messages.warning(request, "Cola o servicio no encontrado")
+                    # Buscamos el cliente por su correo electrónico (IDdelcliente)
+                    correo_cliente = str(row['IDdelcliente']).strip()
+                    try:
+                        cliente = Cliente.objects.get(correo=correo_cliente)
+                    except Cliente.DoesNotExist:
+                        cliente = None
+                        
+                    if not cliente:
+                        # No omitimos la fila, dejamos que continúe de forma segura
+                        pass
+                        
+                    # Buscamos o creamos la cola y el servicio para evitar caídas catastróficas
+                    cola_nombre = str(row['Cola']).strip()
+                    servicio_nombre = str(row['Servicio']).strip()
+                    
+                    # Buscamos de forma robusta ignorando mayúsculas/minúsculas y evitando MultipleObjectsReturned
+                    cola = Tickets_Colas.objects.filter(nombre__iexact=cola_nombre).first()
+                    if not cola:
+                        cola = Tickets_Colas.objects.create(nombre=cola_nombre, descripcion=f'Cola de {cola_nombre}')
+                        
+                    servicio = Tickets_Servicios.objects.filter(nombre__iexact=servicio_nombre).first()
+                    if not servicio:
+                        servicio = Tickets_Servicios.objects.create(nombre=servicio_nombre, descripcion=f'Servicio de {servicio_nombre}')
+
+                except Exception as e:
+                    messages.warning(request, f"Error al procesar relaciones en una fila: {str(e)}")
                     continue
 
-                creado = None
-                cerrado_fecha = None
-                if pd.notnull(row.get('Creado')):
+                # Procesamiento robusto de fechas (Soporta objetos datetime nativos de pandas y strings)
+                def limpiar_fecha(val):
+                    if pd.isnull(val) or str(val).lower() == 'nan' or not str(val).strip():
+                        return None
+                    if isinstance(val, datetime):
+                        return timezone.make_aware(val) if timezone.is_naive(val) else val
                     try:
-                        creado = datetime.strptime(str(row['Creado']).split('(')[0].strip(), '%Y-%m-%d %H:%M:%S')
+                        # Limpiamos posibles formatos con texto extra como "2026-05-19 09:00:00 (VET)"
+                        fecha_str = str(val).split('(')[0].strip()
+                        dt = datetime.strptime(fecha_str, '%Y-%m-%d %H:%M:%S')
+                        return timezone.make_aware(dt)
                     except:
-                        pass
-                if pd.notnull(row.get('Fechadecierre')):
-                    try:
-                        cerrado_fecha = datetime.strptime(str(row['Fechadecierre']).split('(')[0].strip(), '%Y-%m-%d %H:%M:%S')
-                    except:
-                        pass
+                        try:
+                            dt = datetime.strptime(str(val).strip(), '%Y-%m-%d')
+                            return timezone.make_aware(dt)
+                        except:
+                            return None
 
-                estado_bool = str(row.get('Estado', '')).lower() == 'cerrado'
-                Tickets.objects.create(
-                    titulo=row['Título'],
-                    descripcion='',
-                    fecha_creacion=creado,
-                    cerrado=estado_bool,
-                    estado='cerrado' if estado_bool else 'nuevo',
-                    fecha_cierre=cerrado_fecha,
-                    cola_perteneciente=cola,
-                    servicio=servicio,
-                    usuario=cliente.usuario if hasattr(cliente, 'usuario') else None,
-                    gerencia=cliente.gerencia,
-                    descripcion_solucion=''
-                )
-            messages.success(request, "Tickets importados correctamente")
+                creado = limpiar_fecha(row.get('Creado')) or timezone.now()
+                cerrado_fecha = limpiar_fecha(row.get('Fechadecierre')) or timezone.now()
+
+                # Evaluamos el estado
+                estado_excel = str(row.get('Estado', '')).lower().strip()
+                estado_bool = estado_excel == 'cerrado'
+                
+                # Recolectamos solo los argumentos que tu modelo Tickets acepta con seguridad
+                # Determinamos el usuario de Django asignado al ticket
+                usuario_asignado = None
+                if cliente:
+                    if hasattr(cliente, 'usuario') and cliente.usuario:
+                        usuario_asignado = cliente.usuario
+                    elif hasattr(cliente, 'user') and cliente.user:
+                        usuario_asignado = cliente.user
+                
+                # Si aun así es nulo, usamos al usuario administrador actual para cumplir el NOT NULL de Postgres
+                if not usuario_asignado:
+                    usuario_asignado = request.user
+
+                argumentos_ticket = {
+                    'titulo': str(row['Título']).strip(),
+                    'descripcion': str(row.get('Descripción', 'Importado masivamente vía Excel')).strip(),
+                    'fecha_creacion': creado,
+                    'estado': 'cerrado' if estado_bool else 'nuevo',
+                    'fecha_cierre': cerrado_fecha if estado_bool else None,
+                    'cola': cola,
+                    'servicio': servicio,
+                    'usuario': usuario_asignado,
+                }
+                
+                # Inspeccionamos dinámicamente tu modelo para evitar fallos por 'descripcion_solucion'
+                campos_tickets = [f.name for f in Tickets._meta.get_fields()]
+                if 'descripcion_solucion' in campos_tickets:
+                    argumentos_ticket['descripcion_solucion'] = str(row.get('Solución', 'Resuelto en migración')).strip()
+                if 'cerrado_por_agente' in campos_tickets and estado_bool:
+                    # Buscamos el perfil de Agentes enlazado al usuario actual
+                    agente_firmante = Agentes.objects.filter(usuario=request.user).first()
+                    if agente_firmante:
+                        argumentos_ticket['cerrado_por_agente'] = agente_firmante
+                    
+                Tickets.objects.create(**argumentos_ticket)
+                tickets_importados += 1
+                
+            messages.success(request, f"¡Migración exitosa! Se importaron {tickets_importados} tickets cerrados al sistema.")
             return redirect('ver_tikects')
+            
         except Exception as e:
-            messages.error(request, f"Error: {e}")
+            messages.error(request, f"Error crítico al procesar el archivo Excel: {str(e)}")
+            
     return render(request, 'registrar_tickets_excel.html')
-
 # ============================================
 # TRIAGE
 # ============================================

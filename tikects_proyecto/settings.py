@@ -98,15 +98,19 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 SITE_ID = 1 # Necesario porque tienes 'django.contrib.sites' en INSTALLED_APPS}
 
 
-# ============================================
-# CONFIGURACIÓN DE CORREO (SMTP)
-# ============================================
+# ==============================================================================
+# CONFIGURACIÓN DE CORREO CORPORATIVO EMVEPRO (SSL Puerto 465)
+# ==============================================================================
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'  # O el host de correo de tu empresa
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = 'correo.soporte@tuempresa.com'
-EMAIL_HOST_PASSWORD = 'tu_contraseña_o_app_password'
-DEFAULT_FROM_EMAIL = 'Soporte EMVEPRO <correo.soporte@tuempresa.com>'
+EMAIL_HOST = 'correo.emvepro.gob.ve'  
+EMAIL_PORT = 465
+
+# Al usar el puerto 465, SSL debe estar en True y TLS en False
+EMAIL_USE_TLS = False
+EMAIL_USE_SSL = True
+
+EMAIL_HOST_USER = 'tickets.soporte@emvepro.gob.ve'
+EMAIL_HOST_PASSWORD = '3f7w6x3S2('
+DEFAULT_FROM_EMAIL = f"Soporte Tickpro 2.0 <{EMAIL_HOST_USER}>"
 
 
