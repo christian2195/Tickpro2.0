@@ -11,7 +11,7 @@ DEBUG = True
 SECRET_KEY = 'django-insecure-4!m$e3i1(-dk91bk2lcgnlbt-a8#rq_b&-i&dyp1!q4cs258n6'
 
 # Si DEBUG es False, debes especificar los dominios aquí
-ALLOWED_HOSTS = ['*'] 
+ALLOWED_HOSTS = ['10.12.12.45', 'localhost', '127.0.0.1', 'tickets.emvepro.gob.ve']
 
 # 3. Definición de Aplicaciones
 INSTALLED_APPS = [
@@ -99,18 +99,21 @@ SITE_ID = 1 # Necesario porque tienes 'django.contrib.sites' en INSTALLED_APPS}
 
 
 # ==============================================================================
-# CONFIGURACIÓN DE CORREO CORPORATIVO EMVEPRO (SSL Puerto 465)
+# CONFIGURACIÓN DE CORREO INTRANET EMVEPRO (SSL INTERNO - PUERTO 465)
 # ==============================================================================
+# Regresamos al backend real de red (SMTP)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'correo.emvepro.gob.ve'  
-EMAIL_PORT = 465
+EMAIL_HOST = '10.9.9.44'  
+EMAIL_PORT = 465          
 
-# Al usar el puerto 465, SSL debe estar en True y TLS en False
 EMAIL_USE_TLS = False
 EMAIL_USE_SSL = True
 
 EMAIL_HOST_USER = 'tickets.soporte@emvepro.gob.ve'
-EMAIL_HOST_PASSWORD = '3f7w6x3S2('
+EMAIL_HOST_PASSWORD = '3f7w6x3S2/'  # Asegúrate de que termine en (
 DEFAULT_FROM_EMAIL = f"Soporte Tickpro 2.0 <{EMAIL_HOST_USER}>"
 
-
+# 🛑 AGREGA ESTA LÍNEA AL FINAL PARA IGNORAR EL CERTIFICADO LOCAL AUTO-FIRMADO
+EMAIL_SSL_CERT_MANDATORY = False
+# Fuerza a que Django escriba https:// en vez de http:// en los emails de recuperación
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')

@@ -40,8 +40,7 @@
                             </div>
                         </div>
 
-                        <div class="mb-4">
-                            <label for="clave" class="form-label">
+                        <div class="mb-3"> <label for="clave" class="form-label">
                                 <i class="fas fa-lock me-2"></i>Contraseña
                             </label>
                             <div class="input-group">
@@ -52,6 +51,12 @@
                                     <i class="fas fa-eye"></i>
                                 </button>
                             </div>
+                        </div>
+
+                        <div class="text-end mb-4">
+                            <a href="{% url 'password_reset' %}" class="text-decoration-none small fw-bold text-success">
+                                ¿Olvidaste tu contraseña?
+                            </a>
                         </div>
 
                         <div class="d-grid gap-2">
