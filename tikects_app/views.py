@@ -104,7 +104,6 @@ def pagina_principal(request):
         except:
             notificaciones = []
 
-    # Bloque de obtención de tickets con try/except anidados e independientes
     try:
         if user.is_superuser:
             ultimos_tickets = Tickets.objects.all().order_by('-fecha_creacion')[:5]
@@ -745,7 +744,13 @@ def cerrar_tikect(request, tikect_id):
         tikect.estado = 'cerrado'
         tikect.fecha_cierre = timezone.now()
         tikect.descripcion_solucion = descripcion_solucion
-        tikect.cerrado_por_agente = request.user
+        
+        # 🔧 SECCIÓN CORREGIDA PARA PREVENIR VALUEERROR: Asigna la instancia del modelo Agentes
+        if hasattr(request.user, 'agente'):
+            tikect.cerrado_por_agente = request.user.agente
+        else:
+            tikect.cerrado_por_agente = Agentes.objects.filter(usuario=request.user).first()
+            
         tikect.save()
         
         if tikect.usuario and tikect.usuario.email:
@@ -770,7 +775,7 @@ def cerrar_tikect(request, tikect_id):
 
 @login_required
 def reasignar_tikect(request, tikect_id):
-    ticket = get_object_or_404(Tickets, id=tikect_id)
+    ticket = get_object_or_404(Tickets, id=ticket_id)
     
     try:
         agente_actual = Agentes.objects.get(usuario=request.user)
@@ -885,7 +890,7 @@ def crear_tikects_clientes(request):
                     tikect=nuevo_tikect,
                     descripcion=f"Nuevo ticket '{titulo}'",
                     usuario_creador=usuario,
-                    agente=asignacion.agente_actual
+                    agent=asignacion.agente_actual
                 )
         except:
             pass
@@ -974,8 +979,8 @@ def ver_tikects_asignados_agentes_cerrados(request):
     reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
     tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones], estado='cerrado').order_by('-fecha_creacion')
     
-    servicios_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
-    tikects_servicios = Tickets.objects.filter(servicio_id__in=servicios_ids, estado='cerrado').order_by('-fecha_creacion')
+    services_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(servicio_id__in=services_ids, estado='cerrado').order_by('-fecha_creacion')
 
     tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
     tikects_list = list(dict.fromkeys(tikects_list))
@@ -1012,8 +1017,8 @@ def ver_tikects_asignados_agentes_abiertos(request):
     reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
     tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones]).exclude(estado='cerrado').order_by('-fecha_creacion')
     
-    servicios_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
-    tikects_servicios = Tickets.objects.filter(servicio_id__in=servicios_ids).exclude(estado='cerrado').order_by('-fecha_creacion')
+    services_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(servicio_id__in=services_ids).exclude(estado='cerrado').order_by('-fecha_creacion')
 
     tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
     tikects_list = list(dict.fromkeys(tikects_list))
@@ -1448,24 +1453,37 @@ def mesa_triage(request):
 @agente_or_superuser_required
 def procesar_triage(request, ticket_id):
     ticket = get_object_or_404(Tickets, id=ticket_id)
+    
     if request.method == 'POST':
         ticket.tipo = request.POST.get('tipo')
         ticket.prioridad = request.POST.get('prioridad')
         ticket.estado_triage = request.POST.get('estado_triage', 'asignado')
         ticket.fecha_triage = datetime.now()
+        
         if hasattr(request.user, 'agente'):
             ticket.agente_triage = request.user.agente
 
+        # 🔧 SOLUCIÓN DEFINITIVA A LA SUPLANTACIÓN: Asignar resolutor al campo de técnico sin mutar al remitente
         agente_id = request.POST.get('agente_asignado')
         if agente_id:
             agente = Agentes.objects.get(id=agente_id)
-            ticket.usuario = agente.usuario
+            ticket.agente = agente  
+        else:
+            ticket.agente = None
+
+        tiempo_estimado = request.POST.get('tiempo_estimado')
+        ticket.tiempo_resolucion_estimado = int(tiempo_estimado) if tiempo_estimado else None
+        ticket.tags = request.POST.get('tags', '')
+        ticket.notas_triage = request.POST.get('notas_triage', '')
 
         ticket.save()
         return redirect('mesa_triage')
 
     return render(request, 'procesar_triage.html', {
-        'ticket': ticket, 'agentes': Agentes.objects.all(), 'colas': Tickets_Colas.objects.all(), 'servicios': Tickets_Servicios.objects.all(),
+        'ticket': ticket, 
+        'agentes': Agentes.objects.all(), 
+        'colas': Tickets_Colas.objects.all(), 
+        'servicios': Tickets_Servicios.objects.all(),
         'prioridades': [('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta'), ('urgente', 'Urgente'), ('critica', 'Crítica')],
         'estados_triage': [('nuevo', 'Nuevo'), ('triaje', 'En Triaje'), ('asignado', 'Asignado')]
     })

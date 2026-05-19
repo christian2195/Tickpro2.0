@@ -48,8 +48,10 @@
                                 <label for="tipo" class="form-label fw-bold">Tipo de Requerimiento:</label>
                                 <select class="form-select" id="tipo" name="tipo" required>
                                     <option value="" disabled selected>-- Seleccione Tipo --</option>
-                                    {% for valor, etiqueta in tipos %}
-                                        <option value="{{ valor }}" {% if ticket.tipo == valor %}selected{% endif %}>{{ etiqueta }}</option>
+                                    {% for servicio in servicios %}
+                                        <option value="{{ servicio.nombre }}" {% if ticket.tipo == servicio.nombre or ticket.servicio.nombre == servicio.nombre %}selected{% endif %}>
+                                            {{ servicio.nombre }}
+                                        </option>
                                     {% endfor %}
                                 </select>
                             </div>
@@ -70,7 +72,8 @@
                                 <label for="estado_triage" class="form-label fw-bold">Estado del Triaje:</label>
                                 <select class="form-select" id="estado_triage" name="estado_triage" required>
                                     {% for valor, etiqueta in estados_triage %}
-<option value="{{ valor }}" {% if ticket.estado_triage == valor or not ticket.estado_triage and valor == 'asignado' %}selected{% endif %}>{{ etiqueta }}</option>                                    {% endfor %}
+                                        <option value="{{ valor }}" {% if ticket.estado_triage == valor or not ticket.estado_triage and valor == 'asignado' %}selected{% endif %}>{{ etiqueta }}</option>
+                                    {% endfor %}
                                 </select>
                             </div>
 
