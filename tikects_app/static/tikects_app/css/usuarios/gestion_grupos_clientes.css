@@ -1,0 +1,50 @@
+/* ============================================
+   ESTILOS DE GRUPOS DE CLIENTES
+   ============================================ */
+
+/* --- Tabla de grupos --- */
+.table .btn-group {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.table tr:hover .btn-group {
+    opacity: 1;
+}
+
+/* --- Modal de grupo --- */
+#modalGrupoCliente .modal-header {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+}
+
+#modalGrupoCliente .modal-footer .btn-success {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+    border: none;
+}
+
+#modalGrupoCliente .invalid-feedback {
+    font-size: 0.8rem;
+}
+
+#modalGrupoCliente .alert-info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+/* --- Modal de eliminación --- */
+#modalEliminarGrupoCliente .modal-header {
+    background: linear-gradient(135deg, #b71c1c, #c62828);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .table .btn-group {
+        opacity: 1;
+    }
+    
+    .table .btn-group .btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+}

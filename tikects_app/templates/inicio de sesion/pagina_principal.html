@@ -1,0 +1,287 @@
+{% extends 'inicio de sesion/base.html' %}
+{% load static %}
+
+{% block title %}Inicio{% endblock %}
+
+{% block content %}
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-home me-3"></i> 
+                {% if request.user.is_superuser or request.user.agente %}
+                    INICIO
+                {% else %}
+                    PORTAL DEL CLIENTE
+                {% endif %}
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
+                    <li class="breadcrumb-item active">Dashboard</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Bienvenida General -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h2 class="text-primary mb-3">
+                        {% if not request.user.is_superuser and not request.user.agente %}¡{% endif %}Bienvenido, {{ request.user.first_name|default:request.user.username }}{% if not request.user.is_superuser and not request.user.agente %}!{% endif %}
+                    </h2>
+                    <p class="text-muted mb-0">
+                        <i class="fas fa-calendar-alt me-2"></i> {{ now|date:"l, d F Y" }}
+                    </p>
+                </div>
+                <div class="col-md-4 text-end">
+                    {% if request.user.is_superuser or request.user.agente %}
+                        <img src="{% static 'tikects_app/logo-gobierno.png' %}" alt="Logo" style="max-height: 60px;" onerror="this.style.display='none'">
+                    {% else %}
+                        <i class="fas fa-user-circle fa-5x text-primary opacity-50"></i>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- VISTA PARA ADMINISTRADORES Y AGENTES -->
+    {% if request.user.is_superuser or request.user.agente %}
+        
+        <!-- Estadísticas rápidas -->
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-ticket-alt"></i></div>
+                    <div class="stat-value">{{ total_tickets|default:"0" }}</div>
+                    <div class="stat-label">Total Tickets</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-check-circle" style="color: #28a745;"></i></div>
+                    <div class="stat-value">{{ tickets_cerrados|default:"0" }}</div>
+                    <div class="stat-label">Cerrados</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-clock" style="color: #ffc107;"></i></div>
+                    <div class="stat-value">{{ tickets_abiertos|default:"0" }}</div>
+                    <div class="stat-label">Abiertos</div>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users" style="color: #17a2b8;"></i></div>
+                    <div class="stat-value">{{ total_agentes|default:"0" }}</div>
+                    <div class="stat-label">Agentes</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones rápidas -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header"><i class="fas fa-bolt me-2"></i> ACCIONES RÁPIDAS</div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'crear_tikects' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-plus-circle me-2"></i> NUEVO TICKET
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'ver_tikects' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-list me-2"></i> VER TICKETS
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'estadisticas' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-chart-bar me-2"></i> ESTADÍSTICAS
+                                </a>
+                            </div>
+                            <div class="col-md-3 mb-2">
+                                <a href="{% url 'configuracion' %}" class="btn btn-outline-primary w-100">
+                                    <i class="fas fa-cog me-2"></i> CONFIGURACIÓN
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    <!-- VISTA PARA CLIENTES -->
+    {% else %}
+        
+        <!-- Tarjetas de resumen -->
+        <div class="row mb-4">
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-primary h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Mis Tickets</h6>
+                                <h2 class="mb-0">{{ total_mis_tickets|default:"0" }}</h2>
+                            </div>
+                            <i class="fas fa-ticket-alt fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-success h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Tickets Abiertos</h6>
+                                <h2 class="mb-0">{{ mis_tickets_abiertos|default:"0" }}</h2>
+                            </div>
+                            <i class="fas fa-folder-open fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card text-white bg-warning h-100">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="card-title">Tickets Cerrados</h6>
+                                <h2 class="mb-0">{{ mis_tickets_cerrados|default:"0" }}</h2>
+                            </div>
+                            <i class="fas fa-check-circle fa-3x opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Acciones rápidas (Clientes) -->
+        <div class="row mb-4">
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-plus-circle fa-4x text-success mb-3"></i>
+                        <h4>Nuevo Ticket</h4>
+                        <p class="text-muted">Crea un nuevo ticket para solicitar soporte</p>
+                        <a href="{% url 'crear_tikects_clientes' %}" class="btn btn-success">
+                            <i class="fas fa-plus-circle me-2"></i> Crear Ticket
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-body text-center">
+                        <i class="fas fa-list fa-4x text-primary mb-3"></i>
+                        <h4>Mis Tickets</h4>
+                        <p class="text-muted">Consulta el estado de tus tickets</p>
+                        <a href="{% url 'ver_mis_tikects' %}" class="btn btn-primary">
+                            <i class="fas fa-list me-2"></i> Ver Tickets
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    {% endif %}
+
+    <!-- Últimos tickets (Bloque compartido, adapta los datos de la vista) -->
+    <div class="card">
+        <div class="card-header {% if not request.user.is_superuser and not request.user.agente %}bg-primary text-white{% endif %}">
+            <h5 class="mb-0"><i class="fas fa-history me-2"></i> {% if request.user.is_superuser or request.user.agente %}ÚLTIMOS TICKETS{% else %}Mis Últimos Tickets{% endif %}</h5>
+        </div>
+        <div class="card-body">
+            {% if ultimos_tickets %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>TÍTULO</th>
+                                {% if request.user.is_superuser or request.user.agente %}<th>USUARIO</th>{% endif %}
+                                <th>SERVICIO</th>
+                                <th>ESTADO</th>
+                                <th>FECHA</th>
+                                <th>ACCIONES</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ticket in ultimos_tickets %}
+                            <tr>
+                                <td><strong>{{ ticket.id }}</strong></td>
+                                <td>{{ ticket.titulo|truncatechars:40 }}</td>
+                                {% if request.user.is_superuser or request.user.agente %}<td>{{ ticket.usuario.username }}</td>{% endif %}
+                                <td>{{ ticket.servicio.nombre }}</td>
+                                <td>
+                                    {% if ticket.estado == 'cerrado' %}
+                                        <span class="badge bg-danger">CERRADO</span>
+                                    {% else %}
+                                        <span class="badge bg-success">ABIERTO</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ ticket.fecha_creacion|date:"d/m/Y" }}</td>
+                                <td>
+                                    <a href="{% url 'detalle_tikect' ticket.id %}" class="btn btn-sm btn-primary" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-ticket-alt fa-3x text-muted mb-3"></i>
+                    {% if request.user.is_superuser or request.user.agente %}
+                        <p class="text-center">No hay tickets disponibles</p>
+                    {% else %}
+                        <p class="text-muted">No tienes tickets creados aún.</p>
+                        <a href="{% url 'crear_tikects_clientes' %}" class="btn btn-primary">
+                            <i class="fas fa-plus-circle me-2"></i> Crear mi primer ticket
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Información de contacto (Solo Clientes) -->
+    {% if not request.user.is_superuser and not request.user.agente %}
+    <div class="card mt-4">
+        <div class="card-header bg-info text-white">
+            <h5 class="mb-0"><i class="fas fa-headset me-2"></i> ¿Necesitas ayuda?</h5>
+        </div>
+        <div class="card-body">
+            <div class="row">
+                <div class="col-md-4 text-center mb-3">
+                    <i class="fas fa-phone-alt fa-2x text-info mb-2"></i>
+                    <h6>Teléfono</h6>
+                    <p class="text-muted">(0212) 123-4567</p>
+                </div>
+                <div class="col-md-4 text-center mb-3">
+                    <i class="fas fa-envelope fa-2x text-info mb-2"></i>
+                    <h6>Email</h6>
+                    <p class="text-muted">soporte@tickpro.com</p>
+                </div>
+                <div class="col-md-4 text-center mb-3">
+                    <i class="fas fa-clock fa-2x text-info mb-2"></i>
+                    <h6>Horario</h6>
+                    <p class="text-muted">Lun-Vie 8:00 AM - 5:00 PM</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</div>
+{% endblock %}

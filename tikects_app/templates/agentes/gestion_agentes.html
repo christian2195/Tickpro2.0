@@ -1,0 +1,207 @@
+{% extends 'inicio de sesion/base.html' %}
+
+{% load static %}
+
+{% block title %}Gestión de Agentes{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_agentes.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-user-tie me-3"></i> GESTIÓN DE AGENTES
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                    <li class="breadcrumb-item active">Agentes</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Botón Crear Agente - abre modal -->
+    <div class="mb-4">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgente" data-mode="crear">
+            <i class="fas fa-plus-circle me-2"></i> Nuevo Agente
+        </button>
+    </div>
+
+    <!-- Tabla de agentes -->
+    <div class="card shadow">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Lista de Agentes</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>#</th>
+                            <th>Usuario</th>
+                            <th>Nombre Completo</th>
+                            <th>Email</th>
+                            <th>Fecha Creación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for agente in agentes %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ agente.usuario.username }}</strong></td>
+                            <td>{{ agente.nombre }} {{ agente.apellido }}</td>
+                            <td>{{ agente.usuario.email }}</td>
+                            <td>{{ agente.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalAgente"
+                                            data-mode="editar"
+                                            data-id="{{ agente.id }}"
+                                            data-username="{{ agente.usuario.username }}"
+                                            data-first_name="{{ agente.nombre }}"
+                                            data-last_name="{{ agente.apellido }}"
+                                            data-email="{{ agente.usuario.email }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalEliminarAgente"
+                                            data-id="{{ agente.id }}"
+                                            data-username="{{ agente.usuario.username }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="6" class="text-center py-4">
+                                <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
+                                <p class="text-muted mb-0">No hay agentes registrados.</p>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================== -->
+<!-- MODAL: Crear/Editar Agente -->
+<!-- ======================================== -->
+<div class="modal fade" id="modalAgente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="modalAgenteTitle">
+                    <i class="fas fa-user-plus me-2"></i> <span id="modalAgenteAction">Nuevo</span> Agente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="formAgente" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <!-- Campos ocultos para modo edición -->
+                    <input type="hidden" id="agente_id" name="agente_id" value="">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="first_name" name="first_name" required>
+                            <div class="invalid-feedback">El nombre es obligatorio.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="last_name" name="last_name" required>
+                            <div class="invalid-feedback">El apellido es obligatorio.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Usuario <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="username" name="username" required>
+                            <div class="invalid-feedback">El usuario es obligatorio.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">Ingrese un email válido.</div>
+                        </div>
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label" id="passwordLabel">Contraseña <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control" id="password" name="password" placeholder="Mínimo 8 caracteres">
+                            <small class="text-muted" id="passwordHelp">Mínimo 8 caracteres.</small>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info mt-2">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>Usuario y Email deben ser únicos en el sistema.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarAgente">
+                        <i class="fas fa-save me-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================== -->
+<!-- MODAL: Confirmar Eliminación de Agente -->
+<!-- ======================================== -->
+<div class="modal fade" id="modalEliminarAgente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de que desea eliminar al agente <strong id="eliminarAgenteNombre"></strong>?</p>
+                <p class="text-muted small">Esta acción eliminará el perfil de agente pero el usuario podrá seguir existiendo en el sistema.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" id="formEliminarAgente">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'tikects_app/js/agentes/gestion_agentes.js' %}?v=3"></script>
+{% endblock %}

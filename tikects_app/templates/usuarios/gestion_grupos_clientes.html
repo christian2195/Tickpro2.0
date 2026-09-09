@@ -1,0 +1,189 @@
+{% extends 'inicio de sesion/base.html' %}  <!-- CAMBIADO: 'inicio de sesion/base.html' → 'base.html' -->
+{% load static %}
+
+{% block title %}Grupos de Clientes{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'tikects_app/css/usuarios/gestion_grupos_clientes.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-users-cog me-3"></i> GRUPOS DE CLIENTES
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                    <li class="breadcrumb-item"><a href="{% url 'ver_cliente' %}">Clientes</a></li>
+                    <li class="breadcrumb-item active">Grupos</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Botón Nuevo Grupo -->
+    <div class="mb-4">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGrupoCliente" data-mode="crear">
+            <i class="fas fa-plus-circle me-2"></i> Nuevo Grupo
+        </button>
+        <a href="{% url 'ver_cliente' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left me-2"></i> Volver a Clientes
+        </a>
+    </div>
+
+    <!-- Tabla de grupos -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Grupos de Clientes</h5>
+            <span class="badge bg-light text-dark">Total: {{ grupos_clientes|length }}</span>
+        </div>
+        <div class="card-body">
+            {% if grupos_clientes %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Descripción</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grupo in grupos_clientes %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td><strong>{{ grupo.nombre }}</strong></td>
+                                <td>{{ grupo.descripcion }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalGrupoCliente"
+                                                data-mode="editar"
+                                                data-id="{{ grupo.id }}"
+                                                data-nombre="{{ grupo.nombre }}"
+                                                data-descripcion="{{ grupo.descripcion }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalEliminarGrupoCliente"
+                                                data-id="{{ grupo.id }}"
+                                                data-nombre="{{ grupo.nombre }}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users-cog fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay grupos de clientes creados</h5>
+                    <p class="text-muted mb-3">Los grupos permiten organizar a los clientes por categorías.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Crear/Editar Grupo de Clientes -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalGrupoCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-users-cog me-2"></i>
+                    <span id="modalGrupoClienteAction">Nuevo</span> Grupo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="formGrupoCliente" class="needs-validation" novalidate">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="grupo_cliente_id" name="grupo_cliente_id" value="">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Grupo <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="grupo_cliente_nombre" name="nombre" 
+                               placeholder="Ej: VIP, Empresas, Gobierno" required>
+                        <div class="invalid-feedback">El nombre es obligatorio.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="grupo_cliente_descripcion" name="descripcion" 
+                                  rows="3" placeholder="Describa el propósito de este grupo" required></textarea>
+                        <div class="invalid-feedback">La descripción es obligatoria.</div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>Los grupos de clientes permiten clasificar y organizar a los clientes para su gestión.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="btnGuardarGrupoCliente">
+                        <i class="fas fa-save me-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Eliminar Grupo de Clientes -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalEliminarGrupoCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de eliminar el grupo <strong id="eliminarGrupoClienteNombre"></strong>?</p>
+                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" id="formEliminarGrupoCliente">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'tikects_app/js/usuarios/gestion_grupos_clientes.js' %}?v=3"></script>
+{% endblock %}

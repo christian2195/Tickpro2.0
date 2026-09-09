@@ -1,0 +1,93 @@
+/* ============================================
+   ESTILOS DEL DASHBOARD / PÁGINA PRINCIPAL
+   ============================================ */
+
+/* --- Tarjetas de estadísticas --- */
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: all 0.3s ease;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+.stat-card .stat-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    color: #0d47a1;
+}
+
+.stat-card .stat-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1.2;
+}
+
+.stat-card .stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- Tarjetas de acción rápida --- */
+.btn-outline-primary.w-100 {
+    padding: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary.w-100:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
+}
+
+/* --- Últimos tickets --- */
+.table .badge {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.7rem;
+}
+
+.table .btn-sm {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* --- Información de contacto (Clientes) --- */
+.contact-card i {
+    background: rgba(13, 202, 240, 0.1);
+    padding: 1rem;
+    border-radius: 50%;
+}
+
+.contact-card h6 {
+    margin-top: 0.5rem;
+    font-weight: 600;
+}
+
+.contact-card p {
+    font-size: 0.9rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .stat-card .stat-value {
+        font-size: 1.75rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.25rem;
+    }
+}

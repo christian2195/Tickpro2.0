@@ -13,13 +13,7 @@ from django.conf import settings
 import openpyxl
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
-import pandas as pd
 from datetime import datetime
-import os
-import io
-import itertools
-import operator
-import unicodedata
 
 # ============================================
 # MODELOS
@@ -27,7 +21,7 @@ import unicodedata
 from .models import (
     Gerencia, Cliente, Tickets, 
     Agentes, Notificaciones, ReasignacionTikects, 
-    Tickets_Servicios, Tickets_Colas, Tickets_Respuestas_Automaticas,
+    Tickets_Servicios, Tickets_Respuestas_Automaticas,
     Grupos_Agentes, Agentes_Por_Grupos, Grupos_Clientes, 
     AsignacionTikects, AgenteGenerico
 )
@@ -40,7 +34,7 @@ def superuser_required(view_func):
     """Verifica que el usuario sea superusuario."""
     decorated_view_func = user_passes_test(
         lambda user: user.is_superuser,
-        login_url='pagina_principal_clientes'
+        login_url='pagina_principal'
     )(view_func)
     return decorated_view_func
 
@@ -48,7 +42,7 @@ def agente_or_superuser_required(view_func):
     """Verifica que el usuario sea agente o superusuario."""
     decorated_view_func = user_passes_test(
         lambda user: user.is_superuser or hasattr(user, 'agente'),
-        login_url='inicio'
+        login_url='login'
     )(view_func)
     return decorated_view_func
 
@@ -58,20 +52,18 @@ def agente_or_superuser_required(view_func):
 
 def inicio(request):
     if request.method == 'GET':
-        return render(request, 'inicio_sesion_admin.html')
+        return render(request, 'inicio de sesion/inicio_sesion.html')
     else:
         username = request.POST.get('username')
         password = request.POST.get('clave')
         user = authenticate(request, username=username, password=password)
+        
         if user is not None:
             login(request, user)
-            if hasattr(user, 'cliente'):
-                return redirect('pagina_principal_clientes')
-            else:
-                return redirect('pagina_principal')
+            return redirect('pagina_principal')
         else:
-            return render(request, 'inicio_sesion_admin.html', {
-                'error': 'Error usuario o contraseña incorrecta'
+            return render(request, 'inicio de sesion/inicio_sesion.html', {
+                'error': 'Error: usuario o contraseña incorrecta'
             })
 
 @login_required
@@ -80,107 +72,60 @@ def cerrar_sesion(request):
     return redirect('/')
 
 # ============================================
-# PÁGINA PRINCIPAL (BLINDADA CONTRA INCONSISTENCIAS)
+# PÁGINA PRINCIPAL
 # ============================================
 
 @login_required
 def pagina_principal(request):
     user = request.user
+    now = datetime.now()
+    
     agente = None
     notificaciones = []
     ultimos_tickets = []
+    context = {'now': now}
 
     try:
         if hasattr(user, 'agente'):
             agente = user.agente
         else:
             agente = Agentes.objects.filter(usuario=user).first()
-    except:
+    except Exception as e:
+        print(f"Error al verificar agente: {e}")
         agente = None
+        
+    context['agente'] = agente
 
-    if agente:
-        try:
+    if user.is_superuser or agente:
+        if agente:
             notificaciones = Notificaciones.objects.filter(agente=agente, leida=False)[:5]
-        except:
-            notificaciones = []
-
-    try:
+            
         if user.is_superuser:
             ultimos_tickets = Tickets.objects.all().order_by('-fecha_creacion')[:5]
-        elif agente:
-            try:
-                tickets_creados = Tickets.objects.filter(usuario=user)
-                try:
-                    tickets_reasignados = Tickets.objects.filter(
-                        id__in=ReasignacionTikects.objects.filter(
-                            agente_nuevo=agente
-                        ).values_list('tikect_id', flat=True)
-                    )
-                    ultimos_tickets = (tickets_creados | tickets_reasignados).distinct().order_by('-fecha_creacion')[:5]
-                except:
-                    ultimos_tickets = tickets_creados.order_by('-fecha_creacion')[:5]
-            except:
-                ultimos_tickets = []
         else:
-            try:
-                ultimos_tickets = Tickets.objects.filter(usuario=user).order_by('-fecha_creacion')[:5]
-            except:
-                try:
-                    ultimos_tickets = Tickets.objects.filter(cliente__usuario=user).order_by('-fecha_creacion')[:5]
-                except:
-                    ultimos_tickets = []
-    except Exception as e:
-        print(f"Error al obtener tickets en panel principal: {e}")
-        ultimos_tickets = []
+            tickets_creados = Tickets.objects.filter(usuario=user)
+            tickets_reasignados = Tickets.objects.filter(
+                id__in=ReasignacionTikects.objects.filter(agente_nuevo=agente).values_list('tikect_id', flat=True)
+            )
+            ultimos_tickets = (tickets_creados | tickets_reasignados).distinct().order_by('-fecha_creacion')[:5]
 
-    try:
-        total_tickets = Tickets.objects.count()
-        tickets_abiertos = Tickets.objects.exclude(estado='cerrado').count()
-        tickets_cerrados = Tickets.objects.filter(estado__iexact='cerrado').count()
-        total_agentes = Agentes.objects.count()
-    except:
-        total_tickets = 0
-        tickets_abiertos = 0
-        tickets_cerrados = 0
-        total_agentes = 0
-
-    now = datetime.now()
-
-    return render(request, 'pagina_principal.html', {
-        'notificaciones': notificaciones,
-        'agente': agente,
-        'ultimos_tickets': ultimos_tickets,
-        'total_tickets': total_tickets,
-        'tickets_abiertos': tickets_abiertos,
-        'tickets_cerrados': tickets_cerrados,
-        'total_agentes': total_agentes,
-        'now': now
-    })
-
-@login_required
-def pagina_clientes(request):
-    """Página principal para clientes."""
-    user = request.user
-    total_mis_tickets = 0
-    mis_tickets_abiertos = 0
-    mis_tickets_cerrados = 0
-    ultimos_tickets = []
-
-    try:
-        total_mis_tickets = Tickets.objects.filter(usuario=user).count()
-        mis_tickets_abiertos = Tickets.objects.filter(usuario=user).exclude(estado='cerrado').count()
-        mis_tickets_cerrados = Tickets.objects.filter(usuario=user, estado='cerrado').count()
+        context.update({
+            'notificaciones': notificaciones,
+            'total_tickets': Tickets.objects.count(),
+            'tickets_abiertos': Tickets.objects.exclude(estado='cerrado').count(),
+            'tickets_cerrados': Tickets.objects.filter(estado__iexact='cerrado').count(),
+            'total_agentes': Agentes.objects.count(),
+        })
+    else:
         ultimos_tickets = Tickets.objects.filter(usuario=user).order_by('-fecha_creacion')[:5]
-    except Exception as e:
-        print(f"Error en dashboard de clientes: {e}")
+        context.update({
+            'total_mis_tickets': Tickets.objects.filter(usuario=user).count(),
+            'mis_tickets_abiertos': Tickets.objects.filter(usuario=user).exclude(estado='cerrado').count(),
+            'mis_tickets_cerrados': Tickets.objects.filter(usuario=user, estado='cerrado').count(),
+        })
 
-    return render(request, 'pagina_principal_clientes.html', {
-        'total_mis_tickets': total_mis_tickets,
-        'mis_tickets_abiertos': mis_tickets_abiertos,
-        'mis_tickets_cerrados': mis_tickets_cerrados,
-        'ultimos_tickets': ultimos_tickets,
-        'now': datetime.now()
-    })
+    context['ultimos_tickets'] = ultimos_tickets
+    return render(request, 'inicio de sesion/pagina_principal.html', context)
 
 # ============================================
 # CONFIGURACIÓN
@@ -189,28 +134,22 @@ def pagina_clientes(request):
 @superuser_required
 @login_required
 def configuracion(request):
-    return render(request, 'configuracion.html')
+    return render(request, 'configuracion/configuracion.html')
 
 # ============================================
-# SERVICIOS, COLAS Y RESPUESTAS AUTOMÁTICAS
+# SERVICIOS Y RESPUESTAS AUTOMÁTICAS
 # ============================================
 
 @superuser_required
 @login_required
 def tikects_servicios(request):
     servicios = Tickets_Servicios.objects.all()
-    return render(request, 'tikects_servicios.html', {'servicios': servicios})
-
-@superuser_required
-@login_required
-def tikects_colas(request):
-    colas = Tickets_Colas.objects.all()
-    return render(request, 'tikects_colas.html', {'colas': colas})
+    return render(request, 'tickets/gestion_servicios.html', {'servicios': servicios})
 
 @login_required
 def tikects_respuestas_automaticas(request):
     respuestas_automaticas = Tickets_Respuestas_Automaticas.objects.all()
-    return render(request, 'tikects_respuestas_automaticas.html', {
+    return render(request, 'tickets/gestion_respuestas.html', {
         'respuestas_automaticas': respuestas_automaticas
     })
 
@@ -218,56 +157,47 @@ def tikects_respuestas_automaticas(request):
 @login_required
 def tikects_servicios_crear(request):
     if request.method == 'POST':
-        nombre = request.POST.get('servicio')
-        descripcion = request.POST.get('servicio_descripcion')
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
         if nombre and descripcion:
             Tickets_Servicios.objects.create(nombre=nombre, descripcion=descripcion)
-            return redirect('tikects_servicios')
-    return render(request, 'tikects_servicios_crear.html')
-
-@superuser_required
-@login_required
-def tikects_colas_crear(request):
-    if request.method == 'POST':
-        nombre = request.POST.get('colas')
-        descripcion = request.POST.get('colas_descripcion')
-        if nombre and descripcion:
-            Tickets_Colas.objects.create(nombre=nombre, descripcion=descripcion)
-            return redirect('tikects_colas')
-    return render(request, 'tikects_colas_crear.html')
+            messages.success(request, f'Servicio "{nombre}" creado con éxito.')
+        else:
+            messages.error(request, 'Todos los campos son obligatorios.')
+        return redirect('tikects_servicios')
+    return redirect('tikects_servicios')
 
 @superuser_required
 @login_required
 def tikects_respuestas_automaticas_crear(request):
     if request.method == 'POST':
-        nombre = request.POST.get('respuesta')
+        nombre = request.POST.get('respuesta', '').strip()
         if nombre:
             Tickets_Respuestas_Automaticas.objects.create(nombre=nombre)
-            return redirect('tikects_respuestas_automaticas')
-    return render(request, 'tikects_respuestas_automaticas_crear.html')
+            messages.success(request, 'Respuesta automática creada con éxito.')
+        else:
+            messages.error(request, 'La respuesta es obligatoria.')
+        return redirect('tikects_respuestas_automaticas')
+    return redirect('tikects_respuestas_automaticas')
 
 @superuser_required
 @login_required
 def eliminar_servicio(request, servicio_id):
     servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
     if request.method == 'POST':
+        nombre = servicio.nombre
         servicio.delete()
+        messages.success(request, f'Servicio "{nombre}" eliminado.')
     return redirect('tikects_servicios')
-
-@superuser_required
-@login_required
-def eliminar_cola(request, cola_id):
-    cola = get_object_or_404(Tickets_Colas, id=cola_id)
-    if request.method == 'POST':
-        cola.delete()
-    return redirect('tikects_colas')
 
 @superuser_required
 @login_required
 def eliminar_respuesta_automatica(request, respuesta_id):
     respuesta = get_object_or_404(Tickets_Respuestas_Automaticas, id=respuesta_id)
     if request.method == 'POST':
+        nombre = respuesta.nombre[:50]
         respuesta.delete()
+        messages.success(request, f'Respuesta automática "{nombre}..." eliminada.')
     return redirect('tikects_respuestas_automaticas')
 
 @superuser_required
@@ -275,222 +205,20 @@ def eliminar_respuesta_automatica(request, respuesta_id):
 def editar_servicios(request, servicio_id):
     servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
     if request.method == 'POST':
-        servicio.nombre = request.POST.get('nombre')
-        servicio.descripcion = request.POST.get('descripcion')
-        servicio.save()
-        return redirect('tikects_servicios')
-    return render(request, 'tikects_servicios_editar.html', {'servicio': servicio})
-
-@superuser_required
-@login_required
-def editar_cola(request, cola_id):
-    cola = get_object_or_404(Tickets_Colas, id=cola_id)
-    if request.method == 'POST':
-        cola.nombre = request.POST.get('nombre')
-        cola.descripcion = request.POST.get('descripcion')
-        cola.save()
-        return redirect('tikects_colas')
-    return render(request, 'tikects_colas_editar.html', {'cola': cola})
-
-# ============================================
-# AGENTES Y GRUPOS
-# ============================================
-
-@superuser_required
-@login_required
-def usuarios_agentes(request):
-    agentes = Agentes.objects.all()
-    return render(request, 'usuarios_agentes.html', {'agentes': agentes})
-
-@superuser_required
-@login_required
-def usuarios_agentes_crear(request):
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        apellido = request.POST.get('apellido')
-        username = request.POST.get('nombre_usuario')
-        email = request.POST.get('email')
-        password = request.POST.get('password')
-
-        if nombre and apellido and username and email and password:
-            try:
-                try:
-                    user = User.objects.get(username=username)
-                    messages.info(request, f"El usuario {username} ya existe. Se creará solo el perfil de agente.")
-                except User.DoesNotExist:
-                    user = User.objects.create_user(
-                        username=username,
-                        email=email,
-                        password=password,
-                        first_name=nombre,
-                        last_name=apellido
-                    )
-                    messages.success(request, f"Usuario {username} creado exitosamente.")
-                
-                agente, created = Agentes.objects.get_or_create(
-                    usuario=user,
-                    defaults={
-                        'nombre_usuario': username,
-                        'correo': email,
-                    }
-                )
-                
-                if created:
-                    messages.success(request, f"Perfil de agente para {username} creado.")
-                else:
-                    messages.info(request, f"El usuario {username} ya tenía perfil de agente.")
-                
-                return redirect('usuarios_agentes')
-                
-            except Exception as e:
-                messages.error(request, f"Error: {str(e)}")
-                return redirect('usuarios_agentes_crear')
-                
-    return render(request, 'usuarios_agentes_crear.html')
-
-@superuser_required
-@login_required
-def editar_agente(request, agente_id):
-    agente = get_object_or_404(Agentes, id=agente_id)
-    usuario = agente.usuario
-
-    if request.method == 'POST':
         nombre = request.POST.get('nombre', '').strip()
-        apellido = request.POST.get('apellido', '').strip()
-        nombre_usuario = request.POST.get('nombre_usuario', '').strip()
-        email = request.POST.get('email', '').strip()
-        nueva_password = request.POST.get('password', '').strip()
-
-        if not nombre or not apellido or not nombre_usuario or not email:
-            messages.error(request, "Todos los campos son obligatorios.")
-            return render(request, 'agentes_editar.html', {'agente': agente})
-
-        try:
-            usuario.username = nombre_usuario
-            usuario.first_name = nombre
-            usuario.last_name = apellido
-            usuario.email = email
-            if nueva_password:
-                usuario.set_password(nueva_password)
-            usuario.save()
-
-            agente.nombre_usuario = nombre_usuario
-            agente.correo = email
-            agente.save()
-
-            messages.success(request, f"Agente '{nombre_usuario}' actualizado exitosamente.")
-            return redirect('usuarios_agentes')
-            
-        except Exception as e:
-            messages.error(request, f"Error al actualizar el agente: {str(e)}")
-            return render(request, 'agentes_editar.html', {'agente': agente})
-
-    return render(request, 'agentes_editar.html', {
-        'agente': agente,
-        'nombre': usuario.first_name,
-        'apellido': usuario.last_name,
-        'nombre_usuario': usuario.username,
-        'email': usuario.email,
-    })
-
-@login_required
-def ver_agentes(request):
-    agentes = Agentes.objects.all().order_by('nombre_usuario')
-    return render(request, 'usuarios_agentes.html', {'agentes': agentes})
-
-@superuser_required
-@login_required
-def eliminar_agente(request, agente_id):
-    agent = get_object_or_404(Agentes, id=agente_id)
-    if request.method == 'POST':
-        try:
-            nombre_usuario = agent.nombre_usuario
-            agent.delete()
-            messages.success(request, f"Agente '{nombre_usuario}' eliminado exitosamente.")
-        except Exception as e:
-            messages.error(request, f"Error al eliminar el agente: {str(e)}")
-    return redirect('usuarios_agentes')
-
-@superuser_required
-@login_required
-def usuarios_grupos_agentes(request):
-    grupos_agentes = Grupos_Agentes.objects.all()
-    return render(request, 'usuarios_grupos_agentes.html', {'grupos_agentes': grupos_agentes})
-
-@superuser_required
-@login_required
-def usuarios_grupos_agentes_crear(request):
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre_grupo')
-        descripcion = request.POST.get('descripcion_grupo')
-        if nombre:
-            Grupos_Agentes.objects.create(nombre=nombre, descripcion=descripcion)
-            return redirect('usuarios_grupos_agentes')
-    return render(request, 'usuarios_grupos_agentes_crear.html')
-
-@superuser_required
-@login_required
-def usuariops_grupo_agentes_eliminar(request, grupo_id):
-    grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
-    if request.method == 'POST':
-        grupo.delete()
-    return redirect('usuarios_grupos_agentes')
-
-@superuser_required
-@login_required
-def editar_grupo(request, grupo_id):
-    grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
-    if request.method == 'POST':
-        grupo.nombre = request.POST.get('nombre')
-        grupo.descripcion = request.POST.get('descripcion')
-        grupo.save()
-        return redirect('usuarios_grupos_agentes')
-    return render(request, 'grupos_editar.html', {'grupo': grupo})
-
-@superuser_required
-@login_required
-def usuarios_por_grupos_agentes(request):
-    grupos = Grupos_Agentes.objects.prefetch_related(
-        Prefetch('agentes_por_grupos_set', queryset=Agentes_Por_Grupos.objects.select_related('agente'))
-    ).all()
-    return render(request, 'usuarios_por_grupos_agentes.html', {'grupos': grupos})
-
-@superuser_required
-@login_required
-def usuarios_grupos_agentes_agregar(request):
-    if request.method == 'GET':
-        agentes = Agentes.objects.all()
-        grupos = Grupos_Agentes.objects.all()
-        return render(request, 'usuarios_grupos_agentes_agregar.html', {
-            'agentes': agentes,
-            'grupos': grupos
-        })
-    else:
-        agente_id = request.POST.get('agente')
-        grupo_id = request.POST.get('grupo')
-        if agente_id and grupo_id:
-            agente = get_object_or_404(Agentes, id=agente_id)
-            grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
-            if Agentes_Por_Grupos.objects.filter(agente=agente, grupo=grupo).exists():
-                return render(request, 'usuarios_grupos_agentes_agregar.html', {
-                    'agentes': Agentes.objects.all(),
-                    'grupos': Grupos_Agentes.objects.all(),
-                    'error': 'El agente ya pertenece a este grupo.'
-                })
-            Agentes_Por_Grupos.objects.create(agente=agente, grupo=grupo)
-            return redirect('usuarios_por_grupos_agentes')
-        return redirect('usuarios_grupos_agentes_agregar')
-
-@superuser_required
-@login_required
-def eliminar_agente_de_grupo(request, grupo_agente_id):
-    grupo_agente = get_object_or_404(Agentes_Por_Grupos, id=grupo_agente_id)
-    if request.method == 'POST':
-        grupo_agente.delete()
-    return redirect('usuarios_por_grupos_agentes')
+        descripcion = request.POST.get('descripcion', '').strip()
+        if nombre and descripcion:
+            servicio.nombre = nombre
+            servicio.descripcion = descripcion
+            servicio.save()
+            messages.success(request, f'Servicio "{nombre}" actualizado.')
+        else:
+            messages.error(request, 'Todos los campos son obligatorios.')
+        return redirect('tikects_servicios')
+    return redirect('tikects_servicios')
 
 # ============================================
-# CLIENTES Y GERENCIAS
+# CLIENTES (VERSION UNIFICADA CON MODALES)
 # ============================================
 
 @superuser_required
@@ -500,7 +228,7 @@ def clientes(request):
     paginator = Paginator(clientes_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'usuarios_clientes.html', {'page_obj': page_obj})
+    return render(request, 'usuarios/gestion_clientes.html', {'page_obj': page_obj})
 
 @superuser_required
 @login_required
@@ -516,11 +244,11 @@ def crear_clientes(request):
 
         if not nombre or not apellido or not username or not password or not gerencia_input:
             messages.error(request, "Todos los campos marcados como obligatorios deben ser completados.")
-            return render(request, 'usuarios_clientes_crear.html')
+            return redirect('ver_cliente')
 
         if User.objects.filter(username=username).exists():
             messages.error(request, f"El nombre de usuario '{username}' ya se encuentra registrado.")
-            return render(request, 'usuarios_clientes_crear.html')
+            return redirect('ver_cliente')
 
         try:
             if gerencia_input.isdigit():
@@ -544,35 +272,59 @@ def crear_clientes(request):
                 correo=email,
                 telefono=telefono,
                 gerencia=gerencia_obj,
-                user_id=user.id
+                usuario=user
             )
             
             messages.success(request, f"Cliente '{nombre} {apellido}' registrado con éxito.")
-            return redirect('clientes')
+            return redirect('ver_cliente')
             
         except Exception as e:
             messages.error(request, f"Error de base de datos al registrar: {str(e)}")
-            return render(request, 'usuarios_clientes_crear.html')
+            return redirect('ver_cliente')
             
-    return render(request, 'usuarios_clientes_crear.html')
+    return redirect('ver_cliente')
 
 @superuser_required
 @login_required
 def editar_cliente(request, cliente_id):
     cliente = get_object_or_404(Cliente, id=cliente_id)
+    
     if request.method == 'POST':
-        cliente.nombre = request.POST.get('nombre')
-        cliente.apellido = request.POST.get('apellido')
-        cliente.nombre_usuario = request.POST.get('nombre_usuario')
-        cliente.email = request.POST.get('email') or None
-        cliente.gerencia = request.POST.get('gerencia')
-        password = request.POST.get('password')
-        if password and hasattr(cliente, 'usuario') and cliente.usuario:
-            cliente.usuario.set_password(password)
-            cliente.usuario.save()
-        cliente.save()
+        nombre = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip() or None
+        telefono = request.POST.get('telefono', '').strip() or None
+        gerencia_input = request.POST.get('gerencia', '').strip()
+        password = request.POST.get('password', '').strip()
+
+        if not nombre or not apellido or not username or not gerencia_input:
+            messages.error(request, "Nombre, apellido, usuario y gerencia son obligatorios.")
+            return redirect('ver_cliente')
+
+        try:
+            user = cliente.usuario
+            user.username = username
+            user.first_name = nombre
+            user.last_name = apellido
+            user.email = email
+            if password:
+                user.set_password(password)
+            user.save()
+
+            cliente.nombre = f"{nombre} {apellido}"
+            cliente.correo = email
+            cliente.telefono = telefono
+            cliente.gerencia = gerencia_input
+            cliente.save()
+
+            messages.success(request, f"Cliente '{nombre} {apellido}' actualizado con éxito.")
+        except Exception as e:
+            messages.error(request, f"Error al actualizar: {str(e)}")
+        
         return redirect('ver_cliente')
-    return render(request, 'usuarios_editar_cliente.html', {'cliente': cliente})
+    
+    return redirect('ver_cliente')
 
 @superuser_required
 @login_required
@@ -587,126 +339,756 @@ def eliminar_cliente(request, cliente_id):
             messages.error(request, f"Error al eliminar cliente: {str(e)}")
     return redirect('ver_cliente')
 
+# ============================================
+# GRUPOS DE CLIENTES (VERSION UNIFICADA)
+# ============================================
+
 @superuser_required
 @login_required
 def usuarios_clientes_grupos(request):
     grupos_clientes = Grupos_Clientes.objects.all()
-    return render(request, 'usuarios_clientes_grupos.html', {'grupos_clientes': grupos_clientes})
+    return render(request, 'usuarios/gestion_grupos_clientes.html', {'grupos_clientes': grupos_clientes})
 
 @superuser_required
 @login_required
 def usuarios_clientes_grupos_crear(request):
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        descripcion = request.POST.get('descripcion')
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
         if nombre and descripcion:
             Grupos_Clientes.objects.create(nombre=nombre, descripcion=descripcion)
-            return redirect('usuarios_clientes_grupos')
-    return render(request, 'usuarios_clientes_grupos_crear.html')
+            messages.success(request, 'Grupo de clientes creado con éxito.')
+        else:
+            messages.error(request, 'Todos los campos son obligatorios.')
+    return redirect('usuarios_clientes_grupos')
 
 @superuser_required
 @login_required
-def ver_gerencias(request):
+def editar_grupo_clientes(request, grupo_id):
+    grupo = get_object_or_404(Grupos_Clientes, id=grupo_id)
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        if nombre and descripcion:
+            grupo.nombre = nombre
+            grupo.descripcion = descripcion
+            grupo.save()
+            messages.success(request, 'Grupo actualizado con éxito.')
+        else:
+            messages.error(request, 'Todos los campos son obligatorios.')
+    return redirect('usuarios_clientes_grupos')
+
+@superuser_required
+@login_required
+def eliminar_grupo_clientes(request, grupo_id):
+    grupo = get_object_or_404(Grupos_Clientes, id=grupo_id)
+    if request.method == 'POST':
+        nombre = grupo.nombre
+        grupo.delete()
+        messages.success(request, f'Grupo "{nombre}" eliminado.')
+    return redirect('usuarios_clientes_grupos')
+
+# ============================================
+# AGENTES Y GRUPOS (VERSION UNIFICADA CON MODALES)
+# ============================================
+
+@superuser_required
+@login_required
+def gestion_agentes(request):
+    agentes = Agentes.objects.select_related('usuario').all()
+    
+    if request.method == 'POST':
+        agente_id = request.POST.get('agente_id')
+        if agente_id:
+            return editar_agente(request, agente_id)
+        else:
+            return crear_agente(request)
+    
+    return render(request, 'agentes/gestion_agentes.html', {'agentes': agentes})
+
+def crear_agente(request):
+    nombre = request.POST.get('first_name', '').strip()
+    apellido = request.POST.get('last_name', '').strip()
+    username = request.POST.get('username', '').strip()
+    email = request.POST.get('email', '').strip()
+    password = request.POST.get('password', '').strip()
+
+    if not all([nombre, apellido, username, email, password]):
+        messages.error(request, "Todos los campos son obligatorios.")
+        return redirect('gestion_agentes')
+
+    try:
+        user, created = User.objects.get_or_create(
+            username=username,
+            defaults={'email': email, 'first_name': nombre, 'last_name': apellido}
+        )
+        
+        if not created:
+            user.first_name = nombre
+            user.last_name = apellido
+            user.email = email
+            if password:
+                user.set_password(password)
+            user.save()
+            messages.info(request, f"Usuario {username} actualizado.")
+        else:
+            user.set_password(password)
+            user.save()
+            messages.success(request, f"Usuario {username} creado exitosamente.")
+        
+        agente, created = Agentes.objects.get_or_create(
+            usuario=user,
+            defaults={
+                'nombre_usuario': username,
+                'nombre': nombre,
+                'apellido': apellido,
+                'correo': email,
+            }
+        )
+        
+        if not created:
+            agente.nombre_usuario = username
+            agente.nombre = nombre
+            agente.apellido = apellido
+            agente.correo = email
+            agente.save()
+            messages.info(request, f"Perfil de agente para {username} actualizado.")
+        else:
+            messages.success(request, f"Perfil de agente para {username} creado.")
+        
+        return redirect('gestion_agentes')
+        
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
+        return redirect('gestion_agentes')
+
+@superuser_required
+@login_required
+def editar_agente(request, agente_id):
+    agente = get_object_or_404(Agentes, id=agente_id)
+    usuario = agente.usuario
+
+    if request.method == 'POST':
+        nombre = request.POST.get('first_name', '').strip()
+        apellido = request.POST.get('last_name', '').strip()
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip()
+        nueva_password = request.POST.get('password', '').strip()
+
+        if not all([nombre, apellido, username, email]):
+            messages.error(request, "Nombre, apellido, usuario y email son obligatorios.")
+            return redirect('gestion_agentes')
+
+        try:
+            usuario.username = username
+            usuario.first_name = nombre
+            usuario.last_name = apellido
+            usuario.email = email
+            if nueva_password:
+                usuario.set_password(nueva_password)
+            usuario.save()
+
+            agente.nombre_usuario = username
+            agente.nombre = nombre
+            agente.apellido = apellido
+            agente.correo = email
+            agente.save()
+
+            messages.success(request, f"Agente '{username}' actualizado exitosamente.")
+        except Exception as e:
+            messages.error(request, f"Error al actualizar: {str(e)}")
+        
+        return redirect('gestion_agentes')
+
+    return redirect('gestion_agentes')
+
+@superuser_required
+@login_required
+def eliminar_agente(request, agente_id):
+    agente = get_object_or_404(Agentes, id=agente_id)
+    if request.method == 'POST':
+        try:
+            nombre_usuario = agente.nombre_usuario
+            agente.delete()
+            messages.success(request, f"Agente '{nombre_usuario}' eliminado exitosamente.")
+        except Exception as e:
+            messages.error(request, f"Error al eliminar el agente: {str(e)}")
+    return redirect('gestion_agentes')
+
+# ============================================
+# GRUPOS DE AGENTES (VERSION UNIFICADA)
+# ============================================
+
+@superuser_required
+@login_required
+def gestion_grupos(request):
+    grupos_agentes = Grupos_Agentes.objects.prefetch_related(
+        Prefetch('agentes_por_grupos_set', 
+                 queryset=Agentes_Por_Grupos.objects.select_related('agente__usuario'))
+    ).all()
+    agentes = Agentes.objects.select_related('usuario').all()
+    
+    if request.method == 'POST':
+        grupo_id = request.POST.get('grupo_id')
+        if grupo_id:
+            grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
+            nombre = request.POST.get('nombre', '').strip()
+            descripcion = request.POST.get('descripcion', '').strip()
+            if nombre and descripcion:
+                grupo.nombre = nombre
+                grupo.descripcion = descripcion
+                grupo.save()
+                messages.success(request, 'Grupo actualizado con éxito.')
+            else:
+                messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('gestion_grupos')
+        else:
+            nombre = request.POST.get('nombre', '').strip()
+            descripcion = request.POST.get('descripcion', '').strip()
+            if nombre and descripcion:
+                Grupos_Agentes.objects.create(nombre=nombre, descripcion=descripcion)
+                messages.success(request, 'Grupo creado con éxito.')
+            else:
+                messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('gestion_grupos')
+    
+    return render(request, 'agentes/gestion_grupos.html', {
+        'grupos_agentes': grupos_agentes,
+        'agentes': agentes
+    })
+
+@superuser_required
+@login_required
+def eliminar_grupo(request, grupo_id):
+    grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
+    if request.method == 'POST':
+        nombre = grupo.nombre
+        grupo.delete()
+        messages.success(request, f"Grupo '{nombre}' eliminado.")
+    return redirect('gestion_grupos')
+
+@superuser_required
+@login_required
+def asignar_agente_grupo(request):
+    if request.method == 'POST':
+        agente_id = request.POST.get('agente')
+        grupo_id = request.POST.get('grupo')
+        
+        if not agente_id or not grupo_id:
+            messages.error(request, "Debe seleccionar un agente y un grupo.")
+            return redirect('gestion_grupos')
+        
+        agente = get_object_or_404(Agentes, id=agente_id)
+        grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
+        
+        if Agentes_Por_Grupos.objects.filter(agente=agente, grupo=grupo).exists():
+            messages.warning(request, f"El agente ya pertenece al grupo {grupo.nombre}.")
+        else:
+            Agentes_Por_Grupos.objects.create(agente=agente, grupo=grupo)
+            messages.success(request, f"Agente asignado al grupo {grupo.nombre}.")
+    
+    return redirect('gestion_grupos')
+
+@superuser_required
+@login_required
+def quitar_agente_grupo(request, grupo_agente_id):
+    grupo_agente = get_object_or_404(Agentes_Por_Grupos, id=grupo_agente_id)
+    if request.method == 'POST':
+        usuario = grupo_agente.agente.nombre_usuario
+        grupo = grupo_agente.grupo.nombre
+        grupo_agente.delete()
+        messages.success(request, f"Agente {usuario} removido del grupo {grupo}.")
+    return redirect('gestion_grupos')
+
+# ============================================
+# AGENTES GENÉRICOS (VERSION UNIFICADA)
+# ============================================
+
+@superuser_required
+@login_required
+def gestion_genericos(request):
+    asignaciones = AgenteGenerico.objects.select_related(
+        'servicio', 'agente_actual__usuario', 'agente_reasignacion__usuario'
+    ).all()
+    servicios = Tickets_Servicios.objects.all()
+    agentes = Agentes.objects.select_related('usuario').all()
+    
+    if request.method == 'POST':
+        return crear_asignacion_generica(request)
+    
+    return render(request, 'agentes/gestion_genericos.html', {
+        'asignaciones': asignaciones,
+        'servicios': servicios,
+        'agentes': agentes
+    })
+
+@superuser_required
+@login_required
+def crear_asignacion_generica(request):
+    if request.method != 'POST':
+        return redirect('gestion_genericos')
+    
+    servicio_id = request.POST.get('servicio')
+    agente_actual_id = request.POST.get('agente_actual')
+    tiempo_reasignacion = request.POST.get('tiempo_reasignacion')
+    agente_reasignacion_id = request.POST.get('agente_reasignacion')
+    
+    if not servicio_id or not agente_actual_id:
+        messages.error(request, "Debe seleccionar un servicio y un agente actual.")
+        return redirect('gestion_genericos')
+    
+    try:
+        servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
+        agente_actual = get_object_or_404(Agentes, id=agente_actual_id)
+        agente_reasignacion = get_object_or_404(Agentes, id=agente_reasignacion_id) if agente_reasignacion_id else None
+        
+        if AgenteGenerico.objects.filter(servicio=servicio).exists():
+            messages.warning(request, f"El servicio {servicio.nombre} ya tiene una asignación.")
+            return redirect('gestion_genericos')
+        
+        tiempo = int(tiempo_reasignacion) if tiempo_reasignacion and tiempo_reasignacion.isdigit() else None
+        
+        AgenteGenerico.objects.create(
+            servicio=servicio,
+            agente_actual=agente_actual,
+            tiempo_reasignacion=tiempo,
+            agente_reasignacion=agente_reasignacion
+        )
+        messages.success(request, f"Asignación genérica creada para {servicio.nombre}.")
+    except Exception as e:
+        messages.error(request, f"Error: {str(e)}")
+    
+    return redirect('gestion_genericos')
+
+@superuser_required
+@login_required
+def eliminar_asignacion_generica(request, asignacion_id):
+    asignacion = get_object_or_404(AgenteGenerico, id=asignacion_id)
+    if request.method == 'POST':
+        servicio = asignacion.servicio.nombre
+        asignacion.delete()
+        messages.success(request, f"Asignación genérica para {servicio} eliminada.")
+    return redirect('gestion_genericos')
+
+# ============================================
+# PERMISOS (VERSION UNIFICADA)
+# ============================================
+
+@superuser_required
+@login_required
+def gestion_permisos(request):
+    agentes = Agentes.objects.select_related('usuario').all()
+    grupos = Grupos_Agentes.objects.prefetch_related('agentes_por_grupos_set').all()
+    return render(request, 'agentes/gestion_permisos.html', {
+        'agentes': agentes,
+        'grupos': grupos
+    })
+
+# ============================================
+# GERENCIAS (VERSION UNIFICADA)
+# ============================================
+
+@superuser_required
+@login_required
+def gestion_gerencias(request):
     gerencias = Gerencia.objects.all()
-    return render(request, 'gerencias.html', {'gerencias': gerencias})
-
-@superuser_required
-@login_required
-def crear_gerencia(request):
+    
     if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        descripcion = request.POST.get('descripcion')
-        if nombre and descripcion:
-            Gerencia.objects.create(nombre=nombre, descripcion=descripcion)
-            messages.success(request, 'Gerencia creada con éxito.')
-            return redirect('ver_gerencias')
+        gerencia_id = request.POST.get('gerencia_id')
+        if gerencia_id:
+            gerencia = get_object_or_404(Gerencia, id=gerencia_id)
+            nombre = request.POST.get('nombre', '').strip()
+            descripcion = request.POST.get('descripcion', '').strip()
+            if nombre and descripcion:
+                gerencia.nombre = nombre
+                gerencia.descripcion = descripcion
+                gerencia.save()
+                messages.success(request, 'Gerencia actualizada con éxito.')
+            else:
+                messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('gestion_gerencias')
         else:
-            messages.error(request, 'Todos los campos son obligatorios.')
-    return render(request, 'gerencias_crear.html')
-
-@superuser_required
-@login_required
-def editar_gerencia(request, gerencia_id):
-    gerencia = get_object_or_404(Gerencia, id=gerencia_id)
-    if request.method == 'POST':
-        nombre = request.POST.get('nombre')
-        descripcion = request.POST.get('descripcion')
-        if nombre and descripcion:
-            gerencia.nombre = nombre
-            gerencia.descripcion = descripcion
-            gerencia.save()
-            messages.success(request, 'Gerencia actualizada.')
-            return redirect('ver_gerencias')
-        else:
-            messages.error(request, 'Todos los campos son obligatorios.')
-    return render(request, 'editar_gerencia.html', {'gerencia': gerencia})
+            nombre = request.POST.get('nombre', '').strip()
+            descripcion = request.POST.get('descripcion', '').strip()
+            if nombre and descripcion:
+                Gerencia.objects.create(nombre=nombre, descripcion=descripcion)
+                messages.success(request, 'Gerencia creada con éxito.')
+            else:
+                messages.error(request, 'Todos los campos son obligatorios.')
+            return redirect('gestion_gerencias')
+    
+    return render(request, 'configuracion/gestion_gerencias.html', {'gerencias': gerencias})
 
 @superuser_required
 @login_required
 def eliminar_gerencia(request, gerencia_id):
     gerencia = get_object_or_404(Gerencia, id=gerencia_id)
     if request.method == 'POST':
+        nombre = gerencia.nombre
         gerencia.delete()
-        messages.success(request, 'Gerencia eliminada.')
-    return redirect('ver_gerencias')
+        messages.success(request, f'Gerencia "{nombre}" eliminada.')
+    return redirect('gestion_gerencias')
 
 # ============================================
-# TICKETS - VISTAS PRINCIPALES
+# TICKETS - VISTAS PRINCIPALES (UNIFICADAS)
 # ============================================
+
+def _get_tickets_base(request, estado=None):
+    """Función auxiliar para obtener tickets filtrados por estado"""
+    user = request.user
+    
+    if user.is_superuser:
+        queryset = Tickets.objects.all()
+    else:
+        # Para agentes, mostrar tickets creados por ellos o reasignados
+        try:
+            agente = Agentes.objects.get(usuario=user)
+            tickets_creados = Tickets.objects.filter(usuario=user)
+            tickets_reasignados = Tickets.objects.filter(
+                id__in=ReasignacionTikects.objects.filter(agente_nuevo=agente).values_list('tikect_id', flat=True)
+            )
+            queryset = (tickets_creados | tickets_reasignados).distinct()
+        except Agentes.DoesNotExist:
+            # Para clientes normales, solo sus tickets
+            queryset = Tickets.objects.filter(usuario=user)
+    
+    if estado == 'cerrado':
+        queryset = queryset.filter(estado__iexact='cerrado')
+    elif estado == 'abierto':
+        queryset = queryset.exclude(estado__iexact='cerrado')
+    
+    return queryset.order_by('-fecha_creacion')
+
+def _get_reasignaciones_dict(tikects):
+    """Función auxiliar para obtener diccionario de reasignaciones"""
+    reasignaciones_dict = {}
+    for r in ReasignacionTikects.objects.all():
+        try:
+            if r.agente_nuevo:
+                reasignaciones_dict[r.ticket_id] = r.agente_nuevo.nombre_usuario
+        except:
+            pass
+    return reasignaciones_dict
 
 @login_required
 def ver_tikects(request):
-    tikects = Tickets.objects.all().order_by('-fecha_creacion')
-    reasignaciones_dict = {}
-    try:
-        for r in ReasignacionTikects.objects.all():
-            if r.agente_nuevo and r.agente_nuevo.usuario:
-                reasignaciones_dict[r.tikect.id] = r.agente_nuevo.usuario.username
-    except:
-        pass
+    estado = None
+    url_name = request.resolver_match.url_name
+    if url_name == 'ver_tikects_cerrados':
+        estado = 'cerrado'
+    elif url_name == 'ver_tikects_abiertos':
+        estado = 'abierto'
+    
+    tikects = _get_tickets_base(request, estado)
     paginator = Paginator(tikects, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'tikects_ver_todos.html', {
+    reasignaciones_dict = _get_reasignaciones_dict(tikects)
+    
+    return render(request, 'tickets/tikects_ver_todos.html', {
         'tikects': page_obj,
         'reasignaciones_dict': reasignaciones_dict
     })
 
-@login_required
-def ver_tikects_cerrados(request):
-    tikects = Tickets.objects.filter(estado='cerrado').order_by('-fecha_creacion')
-    reasignaciones_dict = {}
-    try:
-        for r in ReasignacionTikects.objects.all():
-            if r.agente_nuevo and r.agente_nuevo.usuario:
-                reasignaciones_dict[r.tikect.id] = r.agente_nuevo.usuario.username
-    except:
-        pass
-    paginator = Paginator(tikects, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'tikects_ver_todos.html', {
-        'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict
-    })
+ver_tikects_cerrados = ver_tikects
+ver_tikects_abiertos = ver_tikects
+
+# ============================================
+# TICKETS - CLIENTES
+# ============================================
 
 @login_required
-def ver_tikects_abiertos(request):
-    tikects = Tickets.objects.exclude(estado='cerrado').order_by('-fecha_creacion')
-    reasignaciones_dict = {}
-    try:
-        for r in ReasignacionTikects.objects.all():
-            if r.agente_nuevo and r.agente_nuevo.usuario:
-                reasignaciones_dict[r.tikect.id] = r.agente_nuevo.usuario.username
-    except:
-        pass
+def ver_mis_tikects(request):
+    estado = None
+    url_name = request.resolver_match.url_name
+    if url_name == 'ver_mis_tikects_cerrados':
+        estado = 'cerrado'
+    elif url_name == 'ver_mis_tikects_abiertos':
+        estado = 'abierto'
+    
+    tikects = Tickets.objects.filter(usuario=request.user).order_by('-fecha_creacion')
+    if estado == 'cerrado':
+        tikects = tikects.filter(estado='cerrado')
+    elif estado == 'abierto':
+        tikects = tikects.exclude(estado='cerrado')
+    
     paginator = Paginator(tikects, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'tikects_ver_todos.html', {
+    
+    return render(request, 'tickets/tikects_vista_lista_cliente.html', {'page_obj': page_obj})
+
+ver_mis_tikects_cerrados = ver_mis_tikects
+ver_mis_tikects_abiertos = ver_mis_tikects
+
+# ============================================
+# TICKETS - VISTAS PARA AGENTES
+# ============================================
+
+@login_required
+def ver_tikects_asignados_agentes(request):
+    """Vista para agentes o superusuarios: ver tickets asignados"""
+    user = request.user
+    
+    # Si es superusuario, mostrar todos los tickets
+    if user.is_superuser:
+        tickets_base = Tickets.objects.all().order_by('-fecha_creacion')
+        tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
+        tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
+        
+        url_name = request.resolver_match.url_name
+        if url_name == 'ver_tikects_asignados_agentes_cerrados':
+            tickets_filtrados = tickets_base.filter(estado__iexact='cerrado')
+        elif url_name == 'ver_tikects_asignados_agentes_abiertos':
+            tickets_filtrados = tickets_base.exclude(estado__iexact='cerrado')
+        else:
+            tickets_filtrados = tickets_base
+            
+        paginator = Paginator(tickets_filtrados, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        # Crear un set de IDs de tickets reasignados para consulta rápida
+        reasignados_ids = set()
+        for r in ReasignacionTikects.objects.all():
+            try:
+                if r.agente_nuevo:
+                    reasignados_ids.add(r.ticket_id)
+            except:
+                pass
+
+        context = {
+            'tikects': page_obj,
+            'tikects_abiertos': tikects_abiertos,
+            'tikects_cerrados': tikects_cerrados,
+            'reasignados_ids': reasignados_ids,  # Cambio: usar set de IDs
+            'es_superusuario': True,
+        }
+        return render(request, 'tickets/tikects_asignados_agentes.html', context)
+    
+    # Si no es superusuario, obtener el agente del usuario actual
+    try:
+        agente_actual = Agentes.objects.get(usuario=user)
+    except Agentes.DoesNotExist:
+        messages.warning(request, "No tienes un perfil de agente asignado.")
+        return redirect('pagina_principal')
+    
+    tickets_base = Tickets.objects.filter(usuario=user).order_by('-fecha_creacion')
+    tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
+
+    url_name = request.resolver_match.url_name
+    if url_name == 'ver_tikects_asignados_agentes_cerrados':
+        tickets_filtrados = tickets_base.filter(estado__iexact='cerrado')
+    elif url_name == 'ver_tikects_asignados_agentes_abiertos':
+        tickets_filtrados = tickets_base.exclude(estado__iexact='cerrado')
+    else:
+        tickets_filtrados = tickets_base
+
+    paginator = Paginator(tickets_filtrados, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    # Crear un set de IDs de tickets reasignados para consulta rápida
+    reasignados_ids = set()
+    for r in ReasignacionTikects.objects.all():
+        try:
+            if r.agente_nuevo:
+                reasignados_ids.add(r.ticket_id)
+        except:
+            pass
+
+    context = {
         'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados,
+        'reasignados_ids': reasignados_ids,  # Cambio: usar set de IDs
+        'es_superusuario': False,
+    }
+    return render(request, 'tickets/tikects_asignados_agentes.html', context)
+
+
+@login_required
+def ver_tikects_asignados_agentes_cerrados(request):
+    """Vista para agentes o superusuarios: ver tickets asignados CERRADOS"""
+    user = request.user
+    
+    # Si es superusuario, mostrar todos los tickets cerrados
+    if user.is_superuser:
+        tickets_base = Tickets.objects.filter(estado__iexact='cerrado').order_by('-fecha_creacion')
+        tikects_cerrados = tickets_base.count()
+        tikects_abiertos = Tickets.objects.exclude(estado__iexact='cerrado').count()
+        
+        paginator = Paginator(tickets_base, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        reasignados_ids = set()
+        for r in ReasignacionTikects.objects.all():
+            try:
+                if r.agente_nuevo:
+                    reasignados_ids.add(r.ticket_id)
+            except:
+                pass
+
+        context = {
+            'tikects': page_obj,
+            'tikects_abiertos': tikects_abiertos,
+            'tikects_cerrados': tikects_cerrados,
+            'reasignados_ids': reasignados_ids,
+            'es_superusuario': True,
+        }
+        return render(request, 'tickets/tikects_asignados_agentes.html', context)
+    
+    # Obtener el agente del usuario actual
+    try:
+        agente_actual = Agentes.objects.get(usuario=user)
+    except Agentes.DoesNotExist:
+        messages.warning(request, "No tienes un perfil de agente asignado.")
+        return redirect('pagina_principal')
+    
+    # Tickets creados por el agente
+    tickets_totales_agente = Tickets.objects.filter(usuario=user)
+    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
+    
+    # Tickets directos (creados por el agente como usuario)
+    tikects_directos = Tickets.objects.filter(
+        usuario=agente_actual.usuario, 
+        estado='cerrado'
+    ).order_by('-fecha_creacion')
+    
+    # Tickets reasignados al agente
+    reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
+    tikects_reasignados = Tickets.objects.filter(
+        id__in=[r.tikect.id for r in reasignaciones], 
+        estado='cerrado'
+    ).order_by('-fecha_creacion')
+    
+    # Tickets por servicio asignado al agente
+    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
+    services_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(
+        servicio_id__in=services_ids, 
+        estado='cerrado'
+    ).order_by('-fecha_creacion')
+
+    # Combinar y eliminar duplicados
+    tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
+    tikects_list = list(dict.fromkeys(tikects_list))
+    tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
+
+    paginator = Paginator(tikects_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    reasignados_ids = set()
+    try:
+        for r in ReasignacionTikects.objects.all():
+            if r.agente_nuevo and r.agente_nuevo.usuario:
+                reasignados_ids.add(r.tikect.id)
+    except:
+        pass
+
+    return render(request, 'tickets/tikects_asignados_agentes.html', {
+        'tikects': page_obj,
+        'reasignados_ids': reasignados_ids,
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados,
+        'es_superusuario': False,
     })
+
+
+@login_required
+def ver_tikects_asignados_agentes_abiertos(request):
+    """Vista para agentes o superusuarios: ver tickets asignados ABIERTOS"""
+    user = request.user
+    
+    # Si es superusuario, mostrar todos los tickets abiertos
+    if user.is_superuser:
+        tickets_base = Tickets.objects.exclude(estado__iexact='cerrado').order_by('-fecha_creacion')
+        tikects_cerrados = Tickets.objects.filter(estado__iexact='cerrado').count()
+        tikects_abiertos = tickets_base.count()
+        
+        paginator = Paginator(tickets_base, 10)
+        page_number = request.GET.get('page')
+        page_obj = paginator.get_page(page_number)
+
+        reasignados_ids = set()
+        for r in ReasignacionTikects.objects.all():
+            try:
+                if r.agente_nuevo:
+                    reasignados_ids.add(r.ticket_id)
+            except:
+                pass
+
+        context = {
+            'tikects': page_obj,
+            'tikects_abiertos': tikects_abiertos,
+            'tikects_cerrados': tikects_cerrados,
+            'reasignados_ids': reasignados_ids,
+            'es_superusuario': True,
+        }
+        return render(request, 'tickets/tikects_asignados_agentes.html', context)
+    
+    # Obtener el agente del usuario actual
+    try:
+        agente_actual = Agentes.objects.get(usuario=user)
+    except Agentes.DoesNotExist:
+        messages.warning(request, "No tienes un perfil de agente asignado.")
+        return redirect('pagina_principal')
+    
+    # Tickets creados por el agente
+    tickets_totales_agente = Tickets.objects.filter(usuario=user)
+    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
+    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
+    
+    # Tickets directos (creados por el agente como usuario) - ABIERTOS
+    tikects_directos = Tickets.objects.filter(
+        usuario=agente_actual.usuario
+    ).exclude(estado='cerrado').order_by('-fecha_creacion')
+    
+    # Tickets reasignados al agente - ABIERTOS
+    reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
+    tikects_reasignados = Tickets.objects.filter(
+        id__in=[r.tikect.id for r in reasignaciones]
+    ).exclude(estado='cerrado').order_by('-fecha_creacion')
+    
+    # Tickets por servicio asignado al agente - ABIERTOS
+    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
+    services_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
+    tikects_servicios = Tickets.objects.filter(
+        servicio_id__in=services_ids
+    ).exclude(estado='cerrado').order_by('-fecha_creacion')
+
+    # Combinar y eliminar duplicados
+    tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
+    tikects_list = list(dict.fromkeys(tikects_list))
+    tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
+    
+    paginator = Paginator(tikects_list, 10)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    reasignados_ids = set()
+    try:
+        for r in ReasignacionTikects.objects.all():
+            if r.agente_nuevo and r.agente_nuevo.usuario:
+                reasignados_ids.add(r.tikect.id)
+    except:
+        pass
+
+    return render(request, 'tickets/tikects_asignados_agentes.html', {
+        'tikects': page_obj,
+        'reasignados_ids': reasignados_ids,
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados,
+        'es_superusuario': False,
+    })
+
+# ============================================
+# TICKETS - DETALLE Y ACCIONES
+# ============================================
 
 @login_required
 def detalle_tikect(request, tikect_id):
@@ -731,7 +1113,7 @@ def detalle_tikect(request, tikect_id):
         if hasattr(request.user, 'agente') and agente_nuevo == request.user.agente:
             reasignado = True
 
-    return render(request, 'detalle_tikect.html', {
+    return render(request, 'tickets/detalle_tikect.html', {
         'tikect': tikect,
         'reasignado': reasignado
     })
@@ -745,7 +1127,6 @@ def cerrar_tikect(request, tikect_id):
         tikect.fecha_cierre = timezone.now()
         tikect.descripcion_solucion = descripcion_solucion
         
-        # 🔧 SECCIÓN CORREGIDA PARA PREVENIR VALUEERROR: Asigna la instancia del modelo Agentes
         if hasattr(request.user, 'agente'):
             tikect.cerrado_por_agente = request.user.agente
         else:
@@ -774,14 +1155,14 @@ def cerrar_tikect(request, tikect_id):
     return redirect('detalle_tikect', tikect_id=tikect.id)
 
 @login_required
-def reasignar_tikect(request, tikect_id):
-    ticket = get_object_or_404(Tickets, id=ticket_id)
+def reasignar_tikect(request, tikect_id):  # Asegurar que sea tikect_id
+    ticket = get_object_or_404(Tickets, id=tikect_id)  # Usar tikect_id
     
     try:
         agente_actual = Agentes.objects.get(usuario=request.user)
     except Agentes.DoesNotExist:
         messages.error(request, "No tienes permisos para reasignar tickets. No eres un agente.")
-        return redirect('detalle_tikect', tikect_id=ticket.id)
+        return redirect('detalle_tikect', tikect_id=ticket.id)  # Usar tikect_id
 
     if ReasignacionTikects.objects.filter(tikect=ticket, agente_nuevo=agente_actual).exists():
         messages.error(request, "Este ticket ya ha sido reasignado.")
@@ -800,7 +1181,7 @@ def reasignar_tikect(request, tikect_id):
         nuevo_agente_id = request.POST.get('nuevo_agente')
         if not nuevo_agente_id:
             messages.error(request, "Debe seleccionar un agente para reasignar.")
-            return redirect('reasignar_tikect', tikect_id=ticket.id)
+            return redirect('reasignar_tikect', tikect_id=ticket.id)  # Usar tikect_id
         
         try:
             nuevo_agente = Agentes.objects.get(id=nuevo_agente_id)
@@ -816,8 +1197,8 @@ def reasignar_tikect(request, tikect_id):
             )
             messages.success(request, f"Ticket reasignado exitosamente a {nuevo_agente.nombre_usuario}")
             return redirect('ver_tikects_asignados_agentes')
-        except:
-            pass
+        except Exception as e:
+            messages.error(request, f"Error al reasignar: {str(e)}")
 
     return render(request, 'reasignar_tikects.html', {
         'tikect': ticket,
@@ -825,59 +1206,30 @@ def reasignar_tikect(request, tikect_id):
     })
 
 # ============================================
-# TICKETS - VISTAS PARA CLIENTES
+# TICKETS - CREACIÓN
 # ============================================
-
-@login_required
-def ver_mis_tikects(request):
-    tikects = Tickets.objects.filter(usuario=request.user).order_by('-fecha_creacion')
-    paginator = Paginator(tikects, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'tikects_vista_lista_cliente.html', {'page_obj': page_obj})
-
-@login_required
-def ver_mis_tikects_cerrados(request):
-    tikects = Tickets.objects.filter(usuario=request.user, estado='cerrado').order_by('-fecha_creacion')
-    paginator = Paginator(tikects, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'tikects_vista_lista_cliente.html', {'page_obj': page_obj})
-
-@login_required
-def ver_mis_tikects_abiertos(request):
-    tikects = Tickets.objects.filter(usuario=request.user).exclude(estado='cerrado').order_by('-fecha_creacion')
-    paginator = Paginator(tikects, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-    return render(request, 'tikects_vista_lista_cliente.html', {'page_obj': page_obj})
 
 @login_required
 def crear_tikects_clientes(request):
     if request.method == 'GET':
         servicios = Tickets_Servicios.objects.all()
-        colas = Tickets_Colas.objects.all()
         gerencias = Gerencia.objects.all()
-        return render(request, 'tikects_crear.html', {
+        return render(request, 'tickets/tikects_crear.html', {
             'servicios': servicios,
-            'colas': colas,
             'gerencias': gerencias,
         })
     elif request.method == 'POST':
         titulo = request.POST.get('titulo')
         descripcion = request.POST.get('descripcion')
-        cola_id = request.POST.get('cola')
         servicio_id = request.POST.get('servicio')
         usuario = request.user
 
-        cola = get_object_or_404(Tickets_Colas, id=cola_id)
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
         cliente = Cliente.objects.filter(usuario=usuario).first()
 
         nuevo_tikect = Tickets.objects.create(
             titulo=titulo,
             descripcion=descripcion,
-            cola=cola,
             servicio=servicio,
             usuario=usuario,
             cliente=cliente,
@@ -902,146 +1254,27 @@ def crear_tikects_clientes(request):
 def crear_tikects(request):
     if request.method == 'GET':
         servicios = Tickets_Servicios.objects.all()
-        colas = Tickets_Colas.objects.all()
         gerencias = Gerencia.objects.all()
-        return render(request, 'tikects_crear.html', {
+        return render(request, 'tickets/tikects_crear.html', {
             'servicios': servicios,
-            'colas': colas,
             'gerencias': gerencias
         })
     elif request.method == 'POST':
         titulo = request.POST.get('titulo')
         descripcion = request.POST.get('descripcion')
-        cola_id = request.POST.get('cola')
         servicio_id = request.POST.get('servicio')
         usuario = request.user
 
-        cola = get_object_or_404(Tickets_Colas, id=cola_id)
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
 
         Tickets.objects.create(
             titulo=titulo,
             descripcion=descripcion,
-            cola=cola,
             servicio=servicio,
             usuario=usuario,
         )
         return redirect('ver_tikects')
     return redirect('crear_tikects')
-
-# ============================================
-# TICKETS - VISTAS PARA AGENTES
-# ============================================
-
-@login_required
-def ver_tikects_asignados_agentes(request):
-    tickets_base = Tickets.objects.filter(usuario=request.user).order_by('-fecha_creacion')
-    tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
-    tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
-
-    url_name = request.resolver_match.url_name
-    if url_name == 'ver_tikects_asignados_agentes_cerrados':
-        tickets_filtrados = tickets_base.filter(estado__iexact='cerrado')
-    elif url_name == 'ver_tikects_asignados_agentes_abiertos':
-        tickets_filtrados = tickets_base.exclude(estado__iexact='cerrado')
-    else:
-        tickets_filtrados = tickets_base
-
-    paginator = Paginator(tickets_filtrados, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    reasignaciones_dict = {}
-    for r in ReasignacionTikects.objects.all():
-        try:
-            if r.agente_nuevo:
-                reasignaciones_dict[r.ticket_id] = r.agente_nuevo.nombre_usuario
-        except:
-            pass
-
-    context = {
-        'tikects': page_obj,
-        'tikects_abiertos': tikects_abiertos,
-        'tikects_cerrados': tikects_cerrados,
-        'reasignaciones_dict': reasignaciones_dict,
-    }
-    return render(request, 'tikects_asignados_agentes.html', context)
-
-@login_required
-def ver_tikects_asignados_agentes_cerrados(request):
-    tickets_totales_agente = Tickets.objects.filter(usuario=request.user)
-    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
-    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
-    agente_actual = get_object_or_404(Agentes, usuario=request.user)
-
-    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
-    tikects_directos = Tickets.objects.filter(usuario=agente_actual.usuario, estado='cerrado').order_by('-fecha_creacion')
-    reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
-    tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones], estado='cerrado').order_by('-fecha_creacion')
-    
-    services_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
-    tikects_servicios = Tickets.objects.filter(servicio_id__in=services_ids, estado='cerrado').order_by('-fecha_creacion')
-
-    tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
-    tikects_list = list(dict.fromkeys(tikects_list))
-    tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
-
-    paginator = Paginator(tikects_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    reasignaciones_dict = {}
-    try:
-        for r in ReasignacionTikects.objects.all():
-            if r.agente_nuevo and r.agente_nuevo.usuario:
-                reasignaciones_dict[r.tikect.id] = r.agente_nuevo.usuario.username
-    except:
-        pass
-
-    return render(request, 'tikects_asignados_agentes.html', {
-        'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict,
-        'tikects_abiertos': tikects_abiertos,
-        'tikects_cerrados': tikects_cerrados
-    })
-
-@login_required
-def ver_tikects_asignados_agentes_abiertos(request):
-    tickets_totales_agente = Tickets.objects.filter(usuario=request.user)
-    tikects_cerrados = tickets_totales_agente.filter(estado__iexact='cerrado').count()
-    tikects_abiertos = tickets_totales_agente.exclude(estado__iexact='cerrado').count()
-    agente_actual = get_object_or_404(Agentes, usuario=request.user)
-
-    asignaciones_servicios = AsignacionTikects.objects.filter(agente=agente_actual)
-    tikects_directos = Tickets.objects.filter(usuario=agente_actual.usuario).exclude(estado='cerrado').order_by('-fecha_creacion')
-    reasignaciones = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual)
-    tikects_reasignados = Tickets.objects.filter(id__in=[r.tikect.id for r in reasignaciones]).exclude(estado='cerrado').order_by('-fecha_creacion')
-    
-    services_ids = [a.tikect.servicio.id for a in asignaciones_servicios if a.tikect and a.tikect.servicio]
-    tikects_servicios = Tickets.objects.filter(servicio_id__in=services_ids).exclude(estado='cerrado').order_by('-fecha_creacion')
-
-    tikects_list = list(tikects_directos) + list(tikects_reasignados) + list(tikects_servicios)
-    tikects_list = list(dict.fromkeys(tikects_list))
-    tikects_list.sort(key=lambda x: x.fecha_creacion, reverse=True)
-    
-    paginator = Paginator(tikects_list, 10)
-    page_number = request.GET.get('page')
-    page_obj = paginator.get_page(page_number)
-
-    reasignaciones_dict = {}
-    try:
-        for r in ReasignacionTikects.objects.all():
-            if r.agente_nuevo and r.agente_nuevo.usuario:
-                reasignaciones_dict[r.tikect.id] = r.agente_nuevo.usuario.username
-    except:
-        pass
-
-    return render(request, 'tikects_asignados_agentes.html', {
-        'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict,
-        'tikects_abiertos': tikects_abiertos,
-        'tikects_cerrados': tikects_cerrados
-    })
 
 # ============================================
 # ESTADÍSTICAS Y EXPORTACIONES
@@ -1070,7 +1303,6 @@ def tikects_estadisticas(request):
             tiempo_promedio = round(promedio_td.total_seconds() / 3600, 1)
 
     tickets_por_prioridad = list(Tickets.objects.values('prioridad').annotate(count=Count('id')))
-    tickets_por_cola = list(Tickets.objects.values('cola__nombre').annotate(count=Count('id')).exclude(cola__isnull=True))
 
     tikects_por_agente = []
     try:
@@ -1099,14 +1331,17 @@ def tikects_estadisticas(request):
         'porcentaje_cerrados': porcentaje_cerrados,
         'tiempo_promedio': tiempo_promedio,
         'tickets_por_prioridad': tickets_por_prioridad,
-        'tickets_por_cola': tickets_por_cola,
         'servicios': list(servicios),
         'tikects_por_dia_cerrados': list(tikects_por_dia_cerrados),
         'tikects_por_mes_cerrados': list(tikects_por_mes_cerrados),
         'tikects_por_semana_cerrados': list(tikects_por_semana_cerrados),
         'tikects_por_agente': list(tikects_por_agente),
     }
-    return render(request, 'estadisticas.html', context)
+    return render(request, 'configuracion/estadisticas.html', context)
+
+# ============================================
+# EXPORTACIONES
+# ============================================
 
 @superuser_required
 @login_required
@@ -1195,70 +1430,8 @@ def exportar_tikects_pdf(request):
     return response
 
 # ============================================
-# AGENTES GENÉRICOS
-# ============================================
-
-@superuser_required
-@login_required
-def agente_generico(request):
-    if request.method == 'GET':
-        servicios_asignados = AgenteGenerico.objects.values_list('servicio_id', flat=True)
-        servicios = Tickets_Servicios.objects.exclude(id__in=servicios_asignados)
-        agentes = Agentes.objects.all()
-        return render(request, 'agente_generico.html', {'servicios': servicios, 'agentes': agentes})
-    else:
-        servicio_id = request.POST.get('servicio')
-        agente_actual_id = request.POST.get('agente_actual')
-        tiempo_reasignacion = request.POST.get('tiempo_reasignacion')
-        agente_reasignacion_id = request.POST.get('agente_reasignacion')
-        
-        if not servicio_id or not agente_actual_id:
-            messages.error(request, "Debe seleccionar un servicio y un agente actual.")
-            return redirect('agente_generico')
-        
-        try:
-            servicio = Tickets_Servicios.objects.get(id=servicio_id)
-            agente_actual = Agentes.objects.get(id=agente_actual_id)
-            agente_reasignacion = Agentes.objects.get(id=agente_reasignacion_id) if agente_reasignacion_id else None
-            tiempo = int(tiempo_reasignacion) if tiempo_reasignacion else None
-            
-            AgenteGenerico.objects.create(
-                servicio=servicio,
-                agente_actual=agente_actual,
-                tiempo_reasignacion=tiempo,
-                agente_reasignacion=agente_reasignacion
-            )
-            messages.success(request, "Asignación de agente genérico completada.")
-            return redirect('ver_agentes_genericos')
-        except Exception as e:
-            messages.error(request, f"Error: {e}")
-            return redirect('agente_generico')
-
-@superuser_required
-@login_required
-def ver_agentes_genericos(request):
-    asignaciones = AgenteGenerico.objects.select_related('servicio', 'agente_actual', 'agente_reasignacion').all()
-    return render(request, 'agentes_genericos_ver.html', {'asignaciones': asignaciones})
-
-@superuser_required
-@login_required
-def eliminar_asignacion(request, asignacion_id):
-    asignacion = get_object_or_404(AgenteGenerico, id=asignacion_id)
-    if request.method == 'POST':
-        asignacion.delete()
-        messages.success(request, "Asignación de manera correcta.")
-    return redirect('ver_agentes_genericos')
-
-# ============================================
 # PERMISOS & NOTIFICACIONES
 # ============================================
-
-@superuser_required
-@login_required
-def permisos(request):
-    agentes = Agentes.objects.all()
-    grupos = Grupos_Agentes.objects.all()
-    return render(request, 'permisos.html', {'agentes': agentes, 'grupos': grupos})
 
 def check_notifications(request):
     if request.user.is_authenticated:
@@ -1269,221 +1442,5 @@ def check_notifications(request):
             return JsonResponse({'new_notifications': nuevas.exists(), 'notifications': notificaciones})
     return JsonResponse({'new_notifications': False, 'notifications': []})
 
-# ============================================
-# CARGA MASIVA DE USUARIOS Y TICKETS (EXCEL)
-# ============================================
-
-def generar_correo_institucional(first_name, last_name):
-    nombre = str(first_name).strip().split()[0].lower()
-    apellido = str(last_name).strip().split()[0].lower()
-    nombre = "".join(c for c in unicodedata.normalize('NFD', nombre) if unicodedata.category(c) != 'Mn')
-    apellido = "".join(c for c in unicodedata.normalize('NFD', apellido) if unicodedata.category(c) != 'Mn')
-    return f"{nombre.replace('ñ', 'n')}.{apellido.replace('ñ', 'n')}@emvepro.gob.ve"
-
-@superuser_required
-@login_required
-def registrar_usuarios(request):
-    if request.method == 'POST':
-        if 'archivo_excel' not in request.FILES:
-            messages.error(request, "Por favor, selecciona un archivo Excel.")
-            return redirect('registrar_usuarios')
-            
-        archivo = request.FILES['archivo_excel']
-        try:
-            df = pd.read_excel(archivo)
-            df.columns = [str(col).strip() for col in df.columns]
-            if 'Gerencia' in df.columns and 'Direccion' not in df.columns:
-                df.rename(columns={'Gerencia': 'Direccion'}, inplace=True)
-                
-            required = ['Nombre', 'Apellido', 'usuario', 'Clave', 'Direccion']
-            if not all(col in df.columns for col in required):
-                messages.error(request, "Estructura incorrecta del Excel.")
-                return redirect('registrar_usuarios')
-            
-            usuarios_creados = 0
-            for _, row in df.iterrows():
-                txt_nombre = str(row['Nombre']).strip()
-                txt_apellido = str(row['Apellido']).strip()
-                username_field = str(row['usuario']).strip()
-                txt_clave = str(row['Clave']).strip()
-                txt_direccion = str(row['Direccion']).strip()
-                
-                if not username_field or username_field.lower() == 'nan':
-                    continue
-                if not txt_clave or txt_clave.lower() == 'nan':
-                    txt_clave = "Emvepro2026*"
-                
-                if not User.objects.filter(username=username_field).exists():
-                    correo_automatico = generar_correo_institucional(txt_nombre, txt_apellido)
-                    user = User.objects.create_user(
-                        username=username_field, password=txt_clave, email=correo_automatico,
-                        first_name=txt_nombre, last_name=txt_apellido
-                    )
-                    gerencia_obj, _ = Gerencia.objects.get_or_create(
-                        nombre=txt_direccion, defaults={'descripcion': f'Gerencia de {txt_direccion}'}
-                    )
-                    
-                    campos_reales = [f.name for f in Cliente._meta.get_fields()]
-                    campos_posibles = {
-                        'nombre': f"{txt_nombre} {txt_apellido}", 'correo': correo_automatico,
-                        'gerencia': gerencia_obj, 'usuario': user, 'telefono': 'N/A'
-                    }
-                    argumentos_validos = {k: v for k, v in campos_posibles.items() if k in campos_reales}
-                    Cliente.objects.create(**argumentos_validos)
-                    usuarios_creados += 1
-            
-            messages.success(request, f"¡Carga masiva completada! Se registraron {usuarios_creados} usuarios.")
-            return redirect('clientes')
-        except Exception as e:
-            messages.error(request, f"Error al procesar el archivo: {e}")
-    return render(request, 'registrar_usuarios.html')
-
-@superuser_required
-@login_required
-def exportar_usuarios_excel(request):
-    clientes = Cliente.objects.all().order_by('nombre')
-    datos = []
-    for c in clientes:
-        bits = c.nombre.split() if c.nombre else []
-        primer_nombre = bits[0].upper() if len(bits) > 0 else "SIN NOMBRE"
-        primer_apellido = bits[1].upper() if len(bits) > 1 else "---"
-        correo_institucional = getattr(c, 'correo', 'N/A')
-        datos.append({
-            'Nombre': primer_nombre, 'Apellido': primer_apellido,
-            'Nombre de Usuario': correo_institucional.split('@')[0] if correo_institucional != 'N/A' else 'N/A',
-            'Correo Institucional': correo_institucional, 'Gerencia': c.gerencia.nombre if c.gerencia else 'Sin Asignar'
-        })
-    df = pd.DataFrame(datos)
-    output = io.BytesIO()
-    with pd.ExcelWriter(output, engine='openpyxl') as writer:
-        df.to_excel(writer, index=False, sheet_name='Clientes EMVEPRO')
-    output.seek(0)
-    response = HttpResponse(output.getvalue(), content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = 'attachment; filename="clientes_emvepro_exportados.xlsx"'
-    return response
-
-@superuser_required
-@login_required
-def registrar_tickets_excel(request):
-    if request.method == 'POST':
-        if 'archivo_excel' not in request.FILES:
-            return redirect('registrar_tickets_excel')
-        archivo = request.FILES['archivo_excel']
-        try:
-            df = pd.read_excel(archivo)
-            df.columns = [str(col).strip() for col in df.columns]
-            tickets_importados = 0
-            for _, row in df.iterrows():
-                try:
-                    correo_cliente = str(row['IDdelcliente']).strip()
-                    cliente = Cliente.objects.filter(correo=correo_cliente).first()
-                    cola_nombre = str(row['Cola']).strip()
-                    servicio_nombre = str(row['Servicio']).strip()
-                    
-                    cola = Tickets_Colas.objects.filter(nombre__iexact=cola_nombre).first() or Tickets_Colas.objects.create(nombre=cola_nombre)
-                    servicio = Tickets_Servicios.objects.filter(nombre__iexact=servicio_nombre).first() or Tickets_Servicios.objects.create(nombre=servicio_nombre)
-                    
-                    def limpiar_fecha(val):
-                        if pd.isnull(val) or str(val).lower() == 'nan': return None
-                        if isinstance(val, datetime): return timezone.make_aware(val) if timezone.is_naive(val) else val
-                        try: return timezone.make_aware(datetime.strptime(str(val).split('(')[0].strip(), '%Y-%m-%d %H:%M:%S'))
-                        except: return None
-
-                    creado = limpiar_fecha(row.get('Creado')) or timezone.now()
-                    cerrado_fecha = limpiar_fecha(row.get('Fechadecierre'))
-                    estado_bool = str(row.get('Estado', '')).lower().strip() == 'cerrado'
-                    usuario_asignado = cliente.usuario if (cliente and hasattr(cliente, 'usuario')) else request.user
-
-                    argumentos_ticket = {
-                        'titulo': str(row['Título']).strip(),
-                        'descripcion': str(row.get('Descripción', 'Importación masiva')).strip(),
-                        'fecha_creacion': creado, 'estado': 'cerrado' if estado_bool else 'nuevo',
-                        'fecha_cierre': cerrado_fecha if estado_bool else None, 'cola': cola, 'servicio': servicio, 'usuario': usuario_asignado
-                    }
-                    
-                    campos_tickets = [f.name for f in Tickets._meta.get_fields()]
-                    if 'descripcion_solucion' in campos_tickets:
-                        argumentos_ticket['descripcion_solucion'] = str(row.get('Solución', 'Resuelto en migración')).strip()
-                        
-                    Tickets.objects.create(**argumentos_ticket)
-                    tickets_importados += 1
-                except:
-                    continue
-            messages.success(request, f"Se importaron {tickets_importados} tickets de forma exitosa.")
-            return redirect('ver_tikects')
-        except Exception as e:
-            messages.error(request, f"Error crítico: {e}")
-    return render(request, 'registrar_tickets_excel.html')
-
-# ============================================
-# TRIAGE
-# ============================================
-
-@agente_or_superuser_required
-def mesa_triage(request):
-    tickets_nuevos = Tickets.objects.filter(Q(estado_triage='nuevo') | Q(estado_triage='triaje')).order_by('-fecha_creacion')
-    stats = {
-        'total_pendientes': Tickets.objects.filter(estado_triage__in=['nuevo', 'triaje']).count(),
-        'por_prioridad': {
-            'critica': Tickets.objects.filter(prioridad='critica', estado_triage='nuevo').count(),
-            'urgente': Tickets.objects.filter(prioridad='urgente', estado_triage='nuevo').count(),
-            'alta': Tickets.objects.filter(prioridad='alta', estado_triage='nuevo').count(),
-        },
-        'por_tipo': list(Tickets.objects.values('tipo').filter(estado_triage='nuevo').annotate(total=Count('id'))),
-    }
-
-    prioridad = request.GET.get('prioridad', '')
-    tipo = request.GET.get('tipo', '')
-    busqueda = request.GET.get('busqueda', '')
-
-    if prioridad: tickets_nuevos = tickets_nuevos.filter(prioridad=prioridad)
-    if tipo: tickets_nuevos = tickets_nuevos.filter(tipo=tipo)
-    if busqueda:
-        tickets_nuevos = tickets_nuevos.filter(Q(titulo__icontains=busqueda) | Q(descripcion__icontains=busqueda))
-
-    paginator = Paginator(tickets_nuevos, 20)
-    page_obj = paginator.get_page(request.GET.get('page'))
-
-    return render(request, 'mesa_triage.html', {
-        'tickets': page_obj, 'stats': stats, 'prioridad_actual': prioridad, 'tipo_actual': tipo, 'busqueda': busqueda,
-        'prioridades': [('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta'), ('urgente', 'Urgente'), ('critica', 'Crítica')],
-        'tipos': [('bug', 'Bug/Error'), ('feature', 'Nueva Funcionalidad'), ('support', 'Soporte'), ('consulta', 'Consulta')]
-    })
-
-@agente_or_superuser_required
-def procesar_triage(request, ticket_id):
-    ticket = get_object_or_404(Tickets, id=ticket_id)
-    
-    if request.method == 'POST':
-        ticket.tipo = request.POST.get('tipo')
-        ticket.prioridad = request.POST.get('prioridad')
-        ticket.estado_triage = request.POST.get('estado_triage', 'asignado')
-        ticket.fecha_triage = datetime.now()
-        
-        if hasattr(request.user, 'agente'):
-            ticket.agente_triage = request.user.agente
-
-        # 🔧 SOLUCIÓN DEFINITIVA A LA SUPLANTACIÓN: Asignar resolutor al campo de técnico sin mutar al remitente
-        agente_id = request.POST.get('agente_asignado')
-        if agente_id:
-            agente = Agentes.objects.get(id=agente_id)
-            ticket.agente = agente  
-        else:
-            ticket.agente = None
-
-        tiempo_estimado = request.POST.get('tiempo_estimado')
-        ticket.tiempo_resolucion_estimado = int(tiempo_estimado) if tiempo_estimado else None
-        ticket.tags = request.POST.get('tags', '')
-        ticket.notas_triage = request.POST.get('notas_triage', '')
-
-        ticket.save()
-        return redirect('mesa_triage')
-
-    return render(request, 'procesar_triage.html', {
-        'ticket': ticket, 
-        'agentes': Agentes.objects.all(), 
-        'colas': Tickets_Colas.objects.all(), 
-        'servicios': Tickets_Servicios.objects.all(),
-        'prioridades': [('baja', 'Baja'), ('media', 'Media'), ('alta', 'Alta'), ('urgente', 'Urgente'), ('critica', 'Crítica')],
-        'estados_triage': [('nuevo', 'Nuevo'), ('triaje', 'En Triaje'), ('asignado', 'Asignado')]
-    })
+def password_reset_view(request):
+    return render(request, 'password_reset.html', {'step': 'form'})

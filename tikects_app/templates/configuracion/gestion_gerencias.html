@@ -1,0 +1,197 @@
+{% extends 'inicio de sesion/base.html' %}  <!-- CAMBIADO: 'inicio de sesion/base.html' → 'base.html' -->
+
+{% load static %}
+
+{% block title %}Gestión de Gerencias{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'tikects_app/css/configuracion/configuracion.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-building me-3"></i> GESTIÓN DE GERENCIAS
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                    <li class="breadcrumb-item active">Gerencias</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Botón Nueva Gerencia -->
+    <div class="mb-4">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGerencia" data-mode="crear">
+            <i class="fas fa-plus-circle me-2"></i> Nueva Gerencia
+        </button>
+    </div>
+
+    <!-- Tabla de gerencias -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Gerencias</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-primary">
+                        <tr>
+                            <th>#</th>
+                            <th>Nombre</th>
+                            <th>Descripción</th>
+                            <th>Fecha de Creación</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for gerencia in gerencias %}
+                        <tr>
+                            <td>{{ forloop.counter }}</td>
+                            <td><strong>{{ gerencia.nombre }}</strong></td>
+                            <td>{{ gerencia.descripcion|truncatechars:50 }}</td>
+                            <td>{{ gerencia.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <button type="button" class="btn btn-primary" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalGerencia"
+                                            data-mode="editar"
+                                            data-id="{{ gerencia.id }}"
+                                            data-nombre="{{ gerencia.nombre }}"
+                                            data-descripcion="{{ gerencia.descripcion }}">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalEliminarGerencia"
+                                            data-id="{{ gerencia.id }}"
+                                            data-nombre="{{ gerencia.nombre }}">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-4">
+                                <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
+                                <p class="text-muted mb-0">No hay gerencias registradas.</p>
+                                <button type="button" class="btn btn-sm btn-success mt-3" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#modalGerencia"
+                                        data-mode="crear">
+                                    <i class="fas fa-plus-circle me-2"></i> Crear primera gerencia
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="card-footer bg-light text-muted">
+                <small>Total: {{ gerencias|length }} gerencia(s)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Crear/Editar Gerencia -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalGerencia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-building me-2"></i> 
+                    <span id="modalGerenciaAction">Nueva</span> Gerencia
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="formGerencia" action="{% url 'gestion_gerencias' %}" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="gerencia_id" name="gerencia_id" value="">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de la Gerencia <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="gerencia_nombre" name="nombre" 
+                               placeholder="Ej: Gerencia de Tecnología" required>
+                        <div class="invalid-feedback">El nombre es obligatorio.</div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="gerencia_descripcion" name="descripcion" 
+                                  rows="3" placeholder="Describa el propósito de esta gerencia" required></textarea>
+                        <div class="invalid-feedback">La descripción es obligatoria.</div>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <small>Las gerencias se utilizan para clasificar los tickets por ubicación o departamento.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarGerencia">
+                        <i class="fas fa-save me-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Eliminar Gerencia -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalEliminarGerencia" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de eliminar la gerencia <strong id="eliminarGerenciaNombre"></strong>?</p>
+                <p class="text-muted small">Esta acción eliminará la gerencia y podría afectar a los clientes asociados.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" id="formEliminarGerencia">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'tikects_app/js/configuracion/configuracion.js' %}?v=3"></script>
+{% endblock %}

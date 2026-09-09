@@ -1,0 +1,111 @@
+/* ============================================
+   ESTILOS DE LOGIN
+   ============================================ */
+
+body {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+                      url("../../images/fondo-inicio.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+    min-height: 100vh;
+}
+
+.card {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    backdrop-filter: blur(5px);
+    border: none !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+    border-radius: 16px;
+    overflow: hidden;
+}
+
+.card .card-header {
+    border-radius: 16px 16px 0 0 !important;
+    padding: 2rem;
+}
+
+.card .card-header i {
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.card .card-body {
+    padding: 2.5rem !important;
+}
+
+.card .card-footer {
+    border-radius: 0 0 16px 16px !important;
+    background: rgba(255, 255, 255, 0.5);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card .input-group-text {
+    background: #f8f9fa;
+    border-right: none;
+    color: #6c757d;
+}
+
+.card .input-group .form-control {
+    border-left: none;
+}
+
+.card .input-group .form-control:focus {
+    box-shadow: none;
+    border-color: #1565c0;
+}
+
+.card .input-group:focus-within {
+    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.25);
+    border-radius: 8px;
+}
+
+.card .input-group:focus-within .input-group-text {
+    border-color: #1565c0;
+}
+
+.card .input-group:focus-within .form-control {
+    border-color: #1565c0;
+}
+
+.card .btn-primary {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    border: none;
+    padding: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.card .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.4);
+}
+
+.card .btn-primary:disabled {
+    opacity: 0.7;
+    transform: none;
+}
+
+.card .btn-outline-secondary {
+    border-color: #ced4da;
+}
+
+.card .btn-outline-secondary:hover {
+    background: #f8f9fa;
+    border-color: #adb5bd;
+}
+
+/* --- Responsive --- */
+@media (max-width: 576px) {
+    .card .card-body {
+        padding: 1.5rem !important;
+    }
+    
+    .card .card-header {
+        padding: 1.5rem;
+    }
+    
+    .card .card-header h3 {
+        font-size: 1.5rem;
+    }
+}

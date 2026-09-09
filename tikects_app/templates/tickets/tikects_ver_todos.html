@@ -1,0 +1,218 @@
+{% extends 'inicio de sesion/base.html' %}
+{% load static %}
+
+{% block title %}Todos los Tickets {% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_ver_todos.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<!-- Encabezado de página -->
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-ticket-alt me-3"></i> TODOS LOS TICKETS
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
+                    <li class="breadcrumb-item active">Todos los Tickets</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Filtros y búsqueda -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="btn-group" role="group">
+                <a href="{% url 'ver_tikects' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects' %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                    <i class="fas fa-list me-2"></i> Todos
+                </a>
+                <a href="{% url 'ver_tikects_abiertos' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_abiertos' %}btn-success{% else %}btn-outline-success{% endif %}">
+                    <i class="fas fa-folder-open me-2"></i> Abiertos
+                </a>
+                <a href="{% url 'ver_tikects_cerrados' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_cerrados' %}btn-danger{% else %}btn-outline-danger{% endif %}">
+                    <i class="fas fa-check-circle me-2"></i> Cerrados
+                </a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Buscar tickets..." id="searchInput">
+                <button class="btn btn-primary" type="button" id="searchButton">
+                    <i class="fas fa-search"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h6 class="card-title">Total Tickets</h6>
+                    <h3 class="mb-0">{{ tikects.paginator.count }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h6 class="card-title">Abiertos</h6>
+                    <h3 class="mb-0">{{ tikects_abiertos|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-danger">
+                <div class="card-body">
+                    <h6 class="card-title">Cerrados</h6>
+                    <h3 class="mb-0">{{ tikects_cerrados|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h6 class="card-title">Reasignados</h6>
+                    <h3 class="mb-0">{{ tikects_reasignados|default:"0" }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabla de tickets -->
+    <div class="card">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Tickets</h5>
+            <span class="badge bg-light text-dark">Página {{ tikects.number }} de {{ tikects.paginator.num_pages }}</span>
+        </div>
+        <div class="card-body">
+            {% if tikects %}
+                <div class="table-responsive">
+                    <table class="table table-hover" id="ticketsTable">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Fecha</th>
+                                <th>Título</th>
+                                <th>Cliente</th>
+                                <th>Gerencia</th>
+                                <th>Servicio</th>
+                                <th>Estado</th>
+                                <th>Reasignado</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for tikect in tikects %}
+                            <tr>
+                                <td><strong>#{{ tikect.id }}</strong></td>
+                                <td>
+                                    <small>{{ tikect.fecha_creacion|date:"d/m/Y" }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ tikect.fecha_creacion|date:"h:i A" }}</small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'detalle_tikect' tikect.id %}" class="text-decoration-none fw-bold">
+                                        {{ tikect.titulo|truncatechars:40 }}
+                                    </a>
+                                </td>
+                                <td>{{ tikect.usuario.username }}</td>
+                                <td>{{ tikect.gerencia|truncatechars:20 }}</td>
+                                <td>{{ tikect.servicio.nombre }}</td>
+                                <td>
+                                    {% if tikect.estado == 'cerrado' %}
+                                        <span class="badge bg-danger">Cerrado</span>
+                                    {% else %}
+                                        <span class="badge bg-success">Abierto</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if tikect.id in reasignados_ids %}
+                                        <span class="badge bg-info" data-bs-toggle="tooltip" title="Reasignado">
+                                            <i class="fas fa-exchange-alt me-1"></i> Sí
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'detalle_tikect' tikect.id %}" class="btn btn-primary" 
+                                           data-bs-toggle="tooltip" title="Ver detalles">
+                                            <i class="fas fa-eye"></i>
+                                        </a>
+                                        {% if not tikect.cerrado and request.user.is_superuser %}
+                                            <a href="{% url 'reasignar_tikect' tikect.id %}" class="btn btn-warning"
+                                               data-bs-toggle="tooltip" title="Reasignar">
+                                                <i class="fas fa-exchange-alt"></i>
+                                            </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if tikects.paginator.num_pages > 1 %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if tikects.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ tikects.previous_page_number }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for i in tikects.paginator.page_range %}
+                            {% if tikects.number == i %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ i }}</span>
+                                </li>
+                            {% elif i > tikects.number|add:'-3' and i < tikects.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if tikects.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ tikects.next_page_number }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay tickets disponibles</h5>
+                    <p class="text-muted mb-3">Los tickets que se creen aparecerán aquí.</p>
+                    <a href="{% url 'crear_tikects' %}" class="btn btn-primary">
+                        <i class="fas fa-plus-circle me-2"></i> Crear primer ticket
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'tikects_app/js/tickets/tikects_ver_todos.js' %}?v=3"></script>
+{% endblock %}

@@ -1,0 +1,54 @@
+/* ============================================
+   ESTILOS DE ESTADÍSTICAS
+   ============================================ */
+
+/* --- Tarjetas de estadísticas --- */
+.card.text-white .card-body {
+    padding: 1.25rem;
+}
+
+.card.text-white h2 {
+    font-weight: 700;
+    font-size: 2rem;
+}
+
+.card.text-white .opacity-50 {
+    opacity: 0.5;
+}
+
+.card.text-white small {
+    font-size: 0.7rem;
+    opacity: 0.8;
+}
+
+/* --- Gráficos --- */
+canvas {
+    max-width: 100%;
+    max-height: 100%;
+}
+
+/* --- Tabla de agentes --- */
+.table .badge {
+    font-size: 0.75rem;
+    padding: 0.35rem 0.65rem;
+}
+
+/* --- Modales de exportación --- */
+.modal-header .btn-close-white {
+    filter: brightness(0) invert(1);
+}
+
+.modal-footer .btn {
+    min-width: 120px;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card.text-white h2 {
+        font-size: 1.5rem;
+    }
+    
+    .card.text-white .fa-3x {
+        font-size: 2rem;
+    }
+}

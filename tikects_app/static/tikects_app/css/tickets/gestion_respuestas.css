@@ -1,0 +1,68 @@
+/* ============================================
+   ESTILOS DE GESTIÓN DE RESPUESTAS AUTOMÁTICAS
+   ============================================ */
+
+/* --- Tabla de respuestas --- */
+.table .btn-group {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.table tr:hover .btn-group {
+    opacity: 1;
+}
+
+.table .btn-info {
+    background: linear-gradient(135deg, #00695c, #00897b);
+    border: none;
+    color: #fff;
+}
+
+.table .btn-info:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 105, 92, 0.3);
+}
+
+.table .btn-danger {
+    background: linear-gradient(135deg, #b71c1c, #c62828);
+    border: none;
+}
+
+.table .btn-danger:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3);
+}
+
+/* --- Modal de vista previa --- */
+#modalPreview .bg-light {
+    background-color: #f8f9fa !important;
+    border: 1px solid #e9ecef;
+}
+
+/* --- Modal de creación --- */
+#modalRespuesta .modal-header {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+}
+
+#modalRespuesta .modal-footer .btn-success {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+    border: none;
+}
+
+#modalRespuesta .alert-info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+/* --- Modal de eliminación --- */
+#modalEliminarRespuesta .modal-header {
+    background: linear-gradient(135deg, #b71c1c, #c62828);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .table .btn-group {
+        opacity: 1;
+    }
+}

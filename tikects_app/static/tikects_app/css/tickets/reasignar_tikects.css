@@ -1,0 +1,61 @@
+/* ============================================
+   ESTILOS DE REASIGNACIÓN DE TICKETS
+   ============================================ */
+
+/* --- Cabecera del ticket --- */
+.card-header.bg-info {
+    background: linear-gradient(135deg, #00695c, #00897b) !important;
+}
+
+/* --- Información del ticket --- */
+.card .text-muted {
+    font-size: 0.9rem;
+}
+
+/* --- Formulario de reasignación --- */
+.card-header.bg-primary {
+    background: linear-gradient(135deg, #0d47a1, #1565c0) !important;
+}
+
+.card .form-select {
+    font-size: 0.95rem;
+}
+
+.card .alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffc107;
+    color: #856404;
+}
+
+/* --- Botones --- */
+.card .btn-secondary {
+    background: linear-gradient(135deg, #424242, #616161);
+    border: none;
+}
+
+.card .btn-primary {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    border: none;
+}
+
+.card .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
+}
+
+/* --- Historial --- */
+.card .timeline .fa-arrow-circle-right {
+    color: #0d47a1;
+}
+
+.card .timeline .text-muted {
+    font-size: 0.8rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card .btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+}

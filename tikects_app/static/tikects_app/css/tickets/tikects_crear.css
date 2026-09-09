@@ -1,0 +1,70 @@
+/* ============================================
+   ESTILOS DE CREACIÓN DE TICKETS
+   ============================================ */
+
+/* --- Cabecera --- */
+.card-header {
+    background: linear-gradient(135deg, #0d47a1, #1565c0) !important;
+}
+
+/* --- Formulario --- */
+.card .form-select,
+.card .form-control {
+    font-size: 0.95rem;
+}
+
+.card .form-select:focus,
+.card .form-control:focus {
+    border-color: #1565c0;
+    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.25);
+}
+
+.card .alert-info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+/* --- Select2 --- */
+.select2-container .select2-selection--single {
+    height: 38px;
+    border-color: #ced4da;
+    border-radius: 6px;
+}
+
+.select2-container .select2-selection--single .select2-selection__rendered {
+    line-height: 38px;
+    padding-left: 12px;
+}
+
+.select2-container .select2-selection--single .select2-selection__arrow {
+    height: 36px;
+}
+
+.select2-container--default .select2-selection--single .select2-selection__placeholder {
+    color: #6c757d;
+}
+
+/* --- Botones --- */
+.card .btn-secondary {
+    background: linear-gradient(135deg, #424242, #616161);
+    border: none;
+}
+
+.card .btn-success {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+    border: none;
+}
+
+.card .btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card .btn {
+        font-size: 0.85rem;
+        padding: 0.4rem 0.8rem;
+    }
+}

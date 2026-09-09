@@ -1,0 +1,275 @@
+{% extends 'inicio de sesion/base.html' %}
+{% load static %}
+
+{% block title %}Gestión de Clientes{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'tikects_app/css/usuarios/gestion_clientes.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-users me-3"></i> GESTIÓN DE CLIENTES
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                    <li class="breadcrumb-item active">Clientes</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Botones de acción -->
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
+        <div>
+            <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalCliente" data-mode="crear">
+                <i class="fas fa-plus-circle me-2"></i> Nuevo Cliente
+            </button>
+            <!-- ELIMINADO: Importar Excel -->
+            <!-- ELIMINADO: Exportar Excel -->
+        </div>
+        <a href="{% url 'usuarios_clientes_grupos' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-users-cog me-2"></i> Grupos de Clientes
+        </a>
+    </div>
+
+    <!-- Tabla de clientes -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Clientes</h5>
+            <span class="badge bg-light text-dark">Total: {{ page_obj.paginator.count }}</span>
+        </div>
+        <div class="card-body">
+            {% if page_obj %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead class="table-primary">
+                            <tr>
+                                <th>#</th>
+                                <th>Nombre</th>
+                                <th>Apellido</th>
+                                <th>Usuario</th>
+                                <th>Correo</th>
+                                <th>Gerencia</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cliente in page_obj %}
+                            <tr>
+                                <td>{{ forloop.counter }}</td>
+                                <td>
+                                    {% with bits=cliente.nombre.split %}
+                                        {{ bits.0|upper }}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    {% with bits=cliente.nombre.split %}
+                                        {% if bits|length > 1 %}
+                                            {{ bits.1|upper }}
+                                        {% else %}
+                                            ---
+                                        {% endif %}
+                                    {% endwith %}
+                                </td>
+                                <td>
+                                    {% if cliente.correo %}
+                                        {{ cliente.correo|slice:":-15" }}
+                                    {% else %}
+                                        user_{{ cliente.id }}
+                                    {% endif %}
+                                </td>
+                                <td>{{ cliente.correo|default:"Sin correo" }}</td>
+                                <td>{{ cliente.gerencia|default:"Sin asignar" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button type="button" class="btn btn-primary" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalCliente"
+                                                data-mode="editar"
+                                                data-id="{{ cliente.id }}"
+                                                data-nombre="{{ cliente.nombre }}"
+                                                data-apellido="{{ cliente.apellido }}"
+                                                data-username="{{ cliente.usuario.username }}"
+                                                data-email="{{ cliente.correo }}"
+                                                data-telefono="{{ cliente.telefono }}"
+                                                data-gerencia="{{ cliente.gerencia }}">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button type="button" class="btn btn-danger" 
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalEliminarCliente"
+                                                data-id="{{ cliente.id }}"
+                                                data-nombre="{{ cliente.nombre }}">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Paginación -->
+                {% if page_obj.paginator.num_pages > 1 %}
+                <nav class="mt-4">
+                    <ul class="pagination justify-content-center">
+                        {% if page_obj.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                                    <i class="fas fa-chevron-left"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+
+                        {% for i in page_obj.paginator.page_range %}
+                            {% if page_obj.number == i %}
+                                <li class="page-item active"><span class="page-link">{{ i }}</span></li>
+                            {% elif i > page_obj.number|add:'-3' and i < page_obj.number|add:'3' %}
+                                <li class="page-item"><a class="page-link" href="?page={{ i }}">{{ i }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if page_obj.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                                    <i class="fas fa-chevron-right"></i>
+                                </a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="fas fa-users fa-4x text-muted mb-3"></i>
+                    <h5 class="text-muted">No hay clientes registrados</h5>
+                    <p class="text-muted mb-3">Los clientes que se registren aparecerán aquí.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Crear/Editar Cliente -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>
+                    <span id="modalClienteAction">Nuevo</span> Cliente
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" id="formCliente" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="cliente_id" name="cliente_id" value="">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="cliente_nombre" name="nombre" required>
+                            <div class="invalid-feedback">El nombre es obligatorio.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="cliente_apellido" name="apellido" required>
+                            <div class="invalid-feedback">El apellido es obligatorio.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nombre de Usuario <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="cliente_username" name="username" required>
+                        <div class="invalid-feedback">El nombre de usuario es obligatorio.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Correo Electrónico</label>
+                        <input type="email" class="form-control" id="cliente_email" name="email" placeholder="No es obligatorio">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Teléfono</label>
+                        <input type="text" class="form-control" id="cliente_telefono" name="telefono" placeholder="No es obligatorio">
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Contraseña <span class="text-danger" id="cliente_password_required">*</span></label>
+                        <input type="password" class="form-control" id="cliente_password" name="password" placeholder="Mínimo 8 caracteres">
+                        <div class="invalid-feedback" id="cliente_password_feedback">La contraseña es obligatoria para nuevos usuarios.</div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Gerencia <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="cliente_gerencia" name="gerencia" required>
+                        <div class="invalid-feedback">La gerencia es obligatoria.</div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success" id="btnGuardarCliente">
+                        <i class="fas fa-save me-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODAL: Eliminar Cliente -->
+<!-- ========================================== -->
+<div class="modal fade" id="modalEliminarCliente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de eliminar al cliente <strong id="eliminarClienteNombre"></strong>?</p>
+                <p class="text-muted small">Esta acción eliminará el cliente y su usuario asociado.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" id="formEliminarCliente">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'tikects_app/js/usuarios/gestion_clientes.js' %}?v=3"></script>
+{% endblock %}

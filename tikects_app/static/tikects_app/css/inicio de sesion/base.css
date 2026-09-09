@@ -1,0 +1,224 @@
+/* ============================================
+   ESTILOS BASE PARA INICIO DE SESIÓN
+   ============================================ */
+
+/* --- Navbar --- */
+.emvepro-navbar {
+    background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
+    padding: 0.75rem 1rem;
+}
+
+.navbar-brand span {
+    letter-spacing: 0.5px;
+    font-size: 1.1rem;
+}
+
+.nav-link {
+    color: rgba(255, 255, 255, 0.85) !important;
+    font-weight: 500;
+    padding: 0.5rem 1rem !important;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.nav-link:hover {
+    color: #ffffff !important;
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.nav-link i {
+    width: 20px;
+    text-align: center;
+}
+
+/* --- Dropdowns --- */
+.dropdown-menu {
+    border: none;
+    border-radius: 10px;
+    padding: 0.5rem 0;
+}
+
+.dropdown-item {
+    padding: 0.6rem 1.2rem;
+    font-size: 0.9rem;
+    transition: all 0.2s ease;
+}
+
+.dropdown-item:hover {
+    background-color: #f0f4ff;
+    color: #0d47a1;
+}
+
+.dropdown-item i {
+    width: 22px;
+    text-align: center;
+}
+
+/* --- Badges --- */
+.badge.bg-light.text-dark.border {
+    border: 1px solid #dee2e6 !important;
+}
+
+/* --- Tooltips --- */
+.tooltip-inner {
+    font-size: 0.75rem;
+    padding: 0.4rem 0.8rem;
+}
+
+/* --- Animaciones --- */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.animate.fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+/* --- Alerts --- */
+.alert {
+    border-radius: 10px;
+    border: none;
+}
+
+/* --- Cards --- */
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+}
+
+/* --- Footer --- */
+footer {
+    font-size: 0.8rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* --- Page Header --- */
+.page-header {
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #0d47a1;
+    margin: 0;
+}
+
+.page-header h1 i {
+    color: #0d47a1;
+}
+
+/* --- Breadcrumb --- */
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin: 0;
+}
+
+.breadcrumb-item a {
+    color: #1565c0;
+    text-decoration: none;
+}
+
+.breadcrumb-item.active {
+    color: #6c757d;
+}
+
+/* --- Botones --- */
+.btn {
+    border-radius: 8px;
+    font-weight: 500;
+    padding: 0.5rem 1.2rem;
+    transition: all 0.3s ease;
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    border: none;
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, #b71c1c, #c62828);
+    border: none;
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, #f57f17, #f9a825);
+    border: none;
+    color: #fff;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #00695c, #00897b);
+    border: none;
+    color: #fff;
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #424242, #616161);
+    border: none;
+}
+
+.btn-outline-primary {
+    border-color: #1565c0;
+    color: #1565c0;
+}
+
+.btn-outline-primary:hover {
+    background: #1565c0;
+    color: #fff;
+}
+
+/* --- Tablas --- */
+.table {
+    font-size: 0.9rem;
+}
+
+.table thead th {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.table-hover tbody tr:hover {
+    background-color: #f5f8ff;
+}
+
+/* --- Paginación --- */
+.pagination .page-link {
+    border: none;
+    border-radius: 8px;
+    margin: 0 2px;
+    color: #0d47a1;
+    padding: 0.5rem 0.9rem;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    color: #fff;
+}
+
+.pagination .page-link:hover {
+    background-color: #e3edfb;
+}
+
+/* --- Tooltips en tablas --- */
+[data-bs-toggle="tooltip"] {
+    cursor: help;
+}

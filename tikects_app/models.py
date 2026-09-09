@@ -36,13 +36,6 @@ ESTADO_TICKET = [
 # TABLAS DE CONFIGURACIÓN
 # ============================================
 
-class Tickets_Colas(models.Model):
-    nombre = models.CharField(max_length=200)
-    descripcion = models.TextField()
-
-    def __str__(self):
-        return self.nombre
-
 class Tickets_Servicios(models.Model): 
     nombre = models.CharField(max_length=200)
     descripcion = models.TextField()
@@ -72,6 +65,8 @@ class Grupos_Agentes(models.Model):
 class Agentes(models.Model):
     usuario = models.OneToOneField(User, on_delete=models.CASCADE)
     nombre_usuario = models.CharField(max_length=200)
+    nombre = models.CharField(max_length=200, blank=True, null=True)
+    apellido = models.CharField(max_length=200, blank=True, null=True)
     correo = models.EmailField()
     fecha_creacion = models.DateTimeField(auto_now_add=True, null=True, blank=True)
 
@@ -105,8 +100,9 @@ class Grupos_Clientes(models.Model):
         return self.nombre
 
 class Cliente(models.Model):
+    usuario = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     nombre = models.CharField(max_length=200)
-    correo = models.EmailField()
+    correo = models.EmailField(null=True, blank=True)
     telefono = models.CharField(max_length=20, blank=True, null=True)
     gerencia = models.ForeignKey(Gerencia, on_delete=models.SET_NULL, null=True)
     grupo = models.ForeignKey(Grupos_Clientes, on_delete=models.SET_NULL, null=True)
@@ -123,10 +119,7 @@ class Tickets(models.Model):
     titulo = models.CharField(max_length=200)
     descripcion = models.TextField()
     
-    # --- CAMPO CORREGIDO ---
     tipo = models.CharField(max_length=20, choices=TIPO_TICKET, default='support')
-    # -----------------------
-    
     prioridad = models.CharField(max_length=20, choices=PRIORIDAD, default='media')
     estado = models.CharField(max_length=20, choices=ESTADO_TICKET, default='nuevo')
     estado_triage = models.CharField(max_length=20, choices=ESTADO_TICKET, default='nuevo')
@@ -137,7 +130,7 @@ class Tickets(models.Model):
     usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name='tickets_creados')
     agente_asignado = models.ForeignKey(Agentes, on_delete=models.SET_NULL, null=True, blank=True)
     
-    cola = models.ForeignKey(Tickets_Colas, on_delete=models.SET_NULL, null=True, blank=True)
+    # ELIMINADO: cola (ya no se usa)
     servicio = models.ForeignKey(Tickets_Servicios, on_delete=models.SET_NULL, null=True, blank=True)
     cliente = models.ForeignKey(Cliente, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -188,4 +181,3 @@ class AgenteGenerico(models.Model):
     
     def __str__(self):
         return f"{self.servicio.nombre} - {self.agente_actual.nombre_usuario}"
-

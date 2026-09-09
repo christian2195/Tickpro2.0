@@ -1,0 +1,265 @@
+{% extends 'inicio de sesion/base.html' %}
+
+{% load static %}
+
+{% block title %}Gestión de Grupos de Agentes{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_grupos.css' %}?v=3">
+{% endblock %}
+
+{% block content %}
+<!-- Encabezado -->
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h1>
+                <i class="fas fa-users me-3"></i> GESTIÓN DE GRUPOS
+            </h1>
+            <nav aria-label="breadcrumb">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                    <li class="breadcrumb-item active">Grupos de Agentes</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Mensajes -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
+                {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Controles -->
+    <div class="d-flex justify-content-between mb-4 flex-wrap gap-2">
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGrupo" data-mode="crear">
+            <i class="fas fa-plus-circle me-2"></i> Nuevo Grupo
+        </button>
+        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarAgente">
+            <i class="fas fa-user-plus me-2"></i> Asignar Agente a Grupo
+        </button>
+    </div>
+
+    <!-- ===== LISTA DE GRUPOS ===== -->
+    <div class="row">
+        {% for grupo in grupos_agentes %}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card h-100 shadow-sm">
+                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0"><i class="fas fa-users me-2"></i> {{ grupo.nombre }}</h5>
+                    <div>
+                        <button type="button" class="btn btn-sm btn-light me-1" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalGrupo"
+                                data-mode="editar"
+                                data-id="{{ grupo.id }}"
+                                data-nombre="{{ grupo.nombre }}"
+                                data-descripcion="{{ grupo.descripcion }}">
+                            <i class="fas fa-edit text-primary"></i>
+                        </button>
+                        <button type="button" class="btn btn-sm btn-light" 
+                                data-bs-toggle="modal" 
+                                data-bs-target="#modalEliminarGrupo"
+                                data-id="{{ grupo.id }}"
+                                data-nombre="{{ grupo.nombre }}">
+                            <i class="fas fa-trash-alt text-danger"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="card-body">
+                    <p class="text-muted small">{{ grupo.descripcion }}</p>
+                    <hr>
+                    <h6 class="text-secondary"><i class="fas fa-user-tie me-1"></i> Miembros:</h6>
+                    {% with miembros=grupo.agentes_por_grupos_set.all %}
+                        {% if miembros %}
+                            <ul class="list-unstyled">
+                                {% for gm in miembros %}
+                                <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
+                                    <span>
+                                        <i class="fas fa-user text-primary me-1"></i>
+                                        {{ gm.agente.usuario.username }}
+                                        <small class="text-muted">({{ gm.agente.usuario.first_name }})</small>
+                                    </span>
+                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalQuitarAgente"
+                                            data-grupo-agente-id="{{ gm.id }}"
+                                            data-usuario="{{ gm.agente.usuario.username }}"
+                                            data-grupo="{{ grupo.nombre }}">
+                                        <i class="fas fa-times"></i>
+                                    </button>
+                                </li>
+                                {% endfor %}
+                            </ul>
+                        {% else %}
+                            <p class="text-muted text-center mb-0"><small>No hay agentes en este grupo</small></p>
+                        {% endif %}
+                        <small class="text-muted">Total: {{ miembros|length }} agente(s)</small>
+                    {% endwith %}
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12">
+            <div class="alert alert-info text-center">
+                <i class="fas fa-info-circle fa-2x mb-2"></i>
+                <p class="mb-0">No hay grupos creados.</p>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<!-- ======================================== -->
+<!-- MODAL: Crear/Editar Grupo -->
+<!-- ======================================== -->
+<div class="modal fade" id="modalGrupo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i> <span id="modalGrupoAction">Nuevo</span> Grupo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <!-- CAMBIADO: action apunta a gestion_grupos -->
+            <form method="post" id="formGrupo" action="{% url 'gestion_grupos' %}" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <input type="hidden" id="grupo_id" name="grupo_id" value="">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="grupo_nombre" name="nombre" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="grupo_descripcion" name="descripcion" rows="3" required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-save me-2"></i> Guardar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================== -->
+<!-- MODAL: Asignar Agente a Grupo -->
+<!-- ======================================== -->
+<div class="modal fade" id="modalAsignarAgente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i> Asignar Agente a Grupo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <!-- CAMBIADO: action apunta a asignar_agente_grupo -->
+            <form method="post" action="{% url 'asignar_agente_grupo' %}" class="needs-validation" novalidate>
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Agente <span class="text-danger">*</span></label>
+                        <select class="form-select" name="agente" required>
+                            <option value="" disabled selected>-- Seleccione un agente --</option>
+                            {% for agente in agentes %}
+                                <option value="{{ agente.id }}">{{ agente.usuario.username }} ({{ agente.nombre }} {{ agente.apellido }})</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Grupo <span class="text-danger">*</span></label>
+                        <select class="form-select" name="grupo" required>
+                            <option value="" disabled selected>-- Seleccione un grupo --</option>
+                            {% for grupo in grupos_agentes %}
+                                <option value="{{ grupo.id }}">{{ grupo.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-check me-2"></i> Asignar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================== -->
+<!-- MODAL: Eliminar Grupo -->
+<!-- ======================================== -->
+<div class="modal fade" id="modalEliminarGrupo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i> Eliminar Grupo
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de eliminar el grupo <strong id="eliminarGrupoNombre"></strong>?</p>
+                <p class="text-muted small">Los agentes asignados a este grupo no serán eliminados.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <form method="post" id="formEliminarGrupo">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-trash-alt me-2"></i> Eliminar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ======================================== -->
+<!-- MODAL: Quitar Agente del Grupo -->
+<!-- ======================================== -->
+<div class="modal fade" id="modalQuitarAgente" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-minus me-2"></i> Quitar Agente del Grupo
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>¿Está seguro de quitar a <strong id="quitarAgenteUsuario"></strong> del grupo <strong id="quitarAgenteGrupo"></strong>?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <!-- CAMBIADO: action apunta a quitar_agente_grupo -->
+                <form method="post" id="formQuitarAgente" action="{% url 'quitar_agente_grupo' 0 %}">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-user-minus me-2"></i> Quitar
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'tikects_app/js/agentes/gestion_grupos.js' %}?v=3"></script>
+{% endblock %}
