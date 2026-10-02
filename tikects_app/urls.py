@@ -76,6 +76,8 @@ urlpatterns = [
     path('tikects/<int:tikect_id>/cerrar/', views.cerrar_tikect, name='cerrar_tikect'),
     path('tikects/crear/', views.crear_tikects, name='crear_tikects'),
     path('tikects/reasignar/<int:tikect_id>/', views.reasignar_tikect, name='reasignar_tikect'),
+    path('api/tickets/<int:tikect_id>/detalle/', views.api_detalle_ticket, name='api_detalle_ticket'),
+    path('api/tickets/<int:tikect_id>/reasignar/', views.api_reasignar_ticket, name='api_reasignar_ticket'),
 
     # ============================================
     # TICKETS - CLIENTES

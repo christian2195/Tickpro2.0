@@ -1,142 +1,119 @@
-{% extends 'base.html' %}
+{% extends 'inicio de sesion/base.html' %}
 {% load static %}
 
 {% block title %}Reasignar Ticket {% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/reasignar_tikects.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/reasignar_tikects.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
 <!-- Encabezado de página -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-exchange-alt me-3"></i> REASIGNAR TICKET
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'ver_tikects_asignados_agentes' %}">Mis Tickets</a></li>
-                    <li class="breadcrumb-item"><a href="{% url 'detalle_tikect' tikect.id %}">Ticket #{{ tikect.id }}</a></li>
-                    <li class="breadcrumb-item active">Reasignar</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Delegación de Caso</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'ver_tikects_asignados_agentes' %}">Mis Tickets</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'detalle_tikect' tikect.id %}">#{{ tikect.id }}</a></li>
+                <li class="breadcrumb-item active">Reasignar</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
+<div class="container-fluid p-0">
     <div class="row">
         <div class="col-md-8 mx-auto">
-            <!-- Información del ticket -->
-            <div class="card mb-4">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Ticket a Reasignar</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <div class="col-md-8">
-                            <h4>{{ tikect.titulo }}</h4>
-                            <p class="text-muted">{{ tikect.descripcion|truncatechars:150 }}</p>
-                        </div>
-                        <div class="col-md-4">
-                            <p><strong>ID:</strong> #{{ tikect.id }}</p>
-                            <p><strong>Servicio:</strong> {{ tikect.servicio.nombre }}</p>
-                            <p><strong>Cliente:</strong> {{ tikect.usuario.username }}</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Mensaje de error -->
+            
             {% if error %}
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="fas fa-exclamation-circle me-2"></i>
-                    {{ error }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <div class="alert alert-danger tp-alert py-3 mb-4 d-flex align-items-center" role="alert">
+                    <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                    <span class="tp-caption text-danger fw-bold">{{ error }}</span>
                 </div>
             {% endif %}
 
-            <!-- Formulario de reasignación -->
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-user-friends me-2"></i> Seleccionar Nuevo Agente</h5>
+            <!-- Formulario y Contexto Unificados -->
+            <div class="card mb-5">
+                <div class="tp-card-header">
+                    <div class="tp-eyebrow mb-0">Parámetros de Reasignación</div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4">
+                    
+                    <!-- Ficha resumen del ticket -->
+                    <div class="tp-surface-alt-box mb-4">
+                        <div class="row">
+                            <div class="col-md-8">
+                                <h4 class="tp-h3 mb-2">{{ tikect.titulo }}</h4>
+                                <p class="tp-body mb-0" style="font-size: 0.9rem;">{{ tikect.descripcion|truncatechars:150 }}</p>
+                            </div>
+                            <div class="col-md-4 border-start mt-3 mt-md-0 ps-md-4">
+                                <p class="mb-1"><strong class="tp-caption text-uppercase">Ticket ID:</strong> <span class="tp-body ms-1">#{{ tikect.id }}</span></p>
+                                <p class="mb-1"><strong class="tp-caption text-uppercase">Servicio:</strong> <span class="tp-body ms-1">{{ tikect.servicio.nombre }}</span></p>
+                                <p class="mb-0"><strong class="tp-caption text-uppercase">Cliente:</strong> <span class="tp-body ms-1">{{ tikect.usuario.username }}</span></p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Operación -->
                     <form method="post" class="needs-validation" novalidate>
                         {% csrf_token %}
                         
                         <div class="mb-4">
-                            <label for="nuevoAgente" class="form-label">
-                                Agente Destino <span class="text-danger">*</span>
+                            <label for="nuevoAgente" class="form-label tp-caption text-uppercase fw-bold">
+                                Analista Destino <span class="text-danger">*</span>
                             </label>
-                            <select class="form-select" id="nuevoAgente" name="nuevo_agente" required>
-                                <option value="" disabled selected>-- Seleccione un agente --</option>
+                            <select class="form-select tp-input" id="nuevoAgente" name="nuevo_agente" required>
+                                <option value="" disabled selected>-- Elija un especialista de su grupo --</option>
                                 {% for agente in agentes_grupo %}
                                     <option value="{{ agente.id }}">
-                                        {{ agente.nombre_usuario }} - {{ agente.nombre }} {{ agente.apellido }}
+                                        {{ agente.nombre }} {{ agente.apellido }} ({{ agente.nombre_usuario }})
                                     </option>
                                 {% endfor %}
                             </select>
-                            <div class="invalid-feedback">Debe seleccionar un agente para reasignar el ticket.</div>
-                            <small class="text-muted">
-                                <i class="fas fa-info-circle me-1"></i>
-                                Solo se muestran agentes del mismo grupo.
-                            </small>
+                            <div class="invalid-feedback">Selección requerida para proceder.</div>
                         </div>
 
-                        <!-- Información adicional -->
-                        <div class="alert alert-warning">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Importante:</strong> Al reasignar el ticket, se notificará al nuevo agente y se registrará en el historial.
+                        <div class="tp-alert-warning mb-4">
+                            <p class="tp-caption fw-bold text-uppercase mb-1"><i class="fas fa-info-circle me-1"></i> Auditoría</p>
+                            <span class="tp-body" style="font-size: 0.85rem; color: inherit;">La transferencia generará una traza permanente en la bitácora del sistema y notificará al destino.</span>
                         </div>
 
-                        <!-- Botones de acción -->
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="{% url 'detalle_tikect' tikect.id %}" class="btn btn-secondary">
-                                <i class="fas fa-times me-2"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="fas fa-exchange-alt me-2"></i> Confirmar Reasignación
-                            </button>
+                        <div class="d-flex justify-content-end gap-2 border-top pt-4" style="border-color: var(--tp-border-light) !important;">
+                            <a href="{% url 'detalle_tikect' tikect.id %}" class="btn btn-outline-primary">Cancelar</a>
+                            <button type="submit" class="btn btn-primary">Ejecutar Transferencia</button>
                         </div>
                     </form>
                 </div>
             </div>
 
-            <!-- Historial de reasignaciones -->
+            <!-- Historial -->
             {% with historial=tikect.reasignaciontikects_set.all %}
                 {% if historial %}
-                    <div class="card mt-4">
-                        <div class="card-header bg-secondary text-white">
-                            <h5 class="mb-0"><i class="fas fa-history me-2"></i> Historial de Reasignaciones</h5>
+                    <div class="card mb-4">
+                        <div class="tp-card-header">
+                            <div class="tp-eyebrow mb-0">Trazabilidad de Asignaciones</div>
                         </div>
-                        <div class="card-body">
-                            <div class="timeline">
+                        <div class="card-body p-4">
+                            <ul class="list-unstyled mb-0">
                                 {% for reasignacion in historial %}
-                                    <div class="d-flex mb-3">
-                                        <div class="flex-shrink-0">
-                                            <i class="fas fa-arrow-circle-right fa-2x text-primary"></i>
+                                    <li class="tp-timeline-item">
+                                        <small class="tp-caption d-block mb-2">{{ reasignacion.fecha_reasignacion|date:"d/m/Y h:i A" }}</small>
+                                        <div class="d-flex align-items-center tp-body">
+                                            <i class="fas fa-level-up-alt fa-rotate-90 text-muted me-2" style="font-size: 0.75rem;"></i>
+                                            <span class="me-3">Origen: <strong>{{ reasignacion.agente_anterior.nombre_usuario }}</strong></span>
+                                            <i class="fas fa-arrow-right text-success me-2" style="font-size: 0.75rem;"></i>
+                                            <span>Destino: <strong>{{ reasignacion.agente_nuevo.nombre_usuario }}</strong></span>
                                         </div>
-                                        <div class="flex-grow-1 ms-3">
-                                            <p class="mb-1">
-                                                <strong>{{ reasignacion.fecha_reasignacion|date:"d/m/Y h:i A" }}</strong>
-                                            </p>
-                                            <p class="mb-0">
-                                                De: {{ reasignacion.agente_anterior.nombre_usuario }} 
-                                                <i class="fas fa-arrow-right mx-2"></i>
-                                                A: {{ reasignacion.agente_nuevo.nombre_usuario }}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    </li>
                                 {% endfor %}
-                            </div>
+                            </ul>
                         </div>
                     </div>
                 {% endif %}
             {% endwith %}
+
         </div>
     </div>
 </div>

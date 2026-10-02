@@ -1,73 +1,86 @@
 /* ============================================
-   ESTILOS DE CONFIGURACIÓN
+   ESTILOS DE CONFIGURACIÓN Y GERENCIAS
+   (Patrón Editorial y Minimalista)
    ============================================ */
 
-/* --- Tarjetas de módulos --- */
-.card {
-    border: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
+/* --- Tarjetas de Módulos (configuracion.html) --- */
+.tp-module-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    overflow: hidden; /* Corta el borde inferior si hay hover */
+    transition: border-color var(--tp-trans);
+    height: 100%;
 }
 
-.card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+.tp-module-card:hover {
+    border-color: var(--tp-ink-ter);
 }
 
-.card-header {
-    border-radius: 12px 12px 0 0 !important;
-    font-weight: 600;
-    letter-spacing: 0.5px;
-    padding: 0.75rem 1.25rem;
+/* Header del módulo con separación estructural */
+.tp-module-card .tp-card-header {
+    background-color: var(--tp-surface); /* Mismo fondo que la tarjeta para no ensuciar */
+    border-bottom: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-24); /* Padding generoso */
+    margin-bottom: var(--tp-sp-8); /* Separa el header del primer ítem */
 }
 
-.card-header i {
-    font-size: 1.1rem;
+/* Contenedor interno de los items */
+.tp-module-card .d-flex.flex-column {
+    padding: 0 var(--tp-sp-16) var(--tp-sp-16) var(--tp-sp-16); /* Da aire a los lados y abajo */
 }
 
-/* --- List group items --- */
-.list-group-item {
-    border: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    padding: 0.75rem 1rem;
-    transition: all 0.2s ease;
+/* Items del listado (Menu Configuration) */
+.tp-list-item {
+    /* Padding interno del ítem: mucho aire arriba/abajo, moderado a los lados */
+    padding: var(--tp-sp-24) var(--tp-sp-16);
+    border-bottom: 1px solid var(--tp-border);
+    transition: all var(--tp-trans);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    color: var(--tp-ink);
+    border-left: 3px solid transparent; /* Reserva espacio para el hover */
+    border-radius: var(--tp-rad-sm); /* Pequeño radio para que el hover no sea cuadrado duro */
 }
 
-.list-group-item:last-child {
-    border-bottom: none;
+/* Evita que el último elemento tenga doble borde inferior */
+.tp-list-item:last-child { 
+    border-bottom: none; 
 }
 
-.list-group-item:hover {
-    background-color: #f8f9fa;
-    transform: translateX(4px);
+/* Hover estructurado: fondo muy suave y línea lateral */
+.tp-list-item:hover { 
+    background-color: var(--tp-bg-base); /* Un gris ultra claro, no oscurece mucho */
+    color: var(--tp-ink); 
+    border-color: transparent; /* Oculta la línea inferior al hacer hover */
 }
 
-.list-group-item i {
-    width: 24px;
-    text-align: center;
-    font-size: 1.1rem;
-}
+/* Colores de línea lateral al hover según el módulo */
+.tp-module-card:nth-child(1) .tp-list-item:hover { border-left-color: var(--tp-info-text); }
+.tp-module-card:nth-child(2) .tp-list-item:hover { border-left-color: var(--tp-success-text); }
+.tp-module-card:nth-child(3) .tp-list-item:hover { border-left-color: var(--tp-warning-text); }
 
-.list-group-item strong {
-    font-size: 0.95rem;
-}
 
-.list-group-item small {
-    font-size: 0.75rem;
+/* Iconos de Módulo (Contenedor tenue) */
+.tp-icon-box {
+    width: 48px;  /* Ligeramente más grande */
+    height: 48px;
+    border-radius: var(--tp-rad-md);
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    margin-right: var(--tp-sp-24); /* Más separación del texto (antes 16) */
+    flex-shrink: 0;
+    border: 1px solid transparent;
+    font-size: 1.2rem;
 }
+.tp-icon-box.clientes { background-color: var(--tp-info-bg); color: var(--tp-info-text); border-color: var(--tp-info-border); }
+.tp-icon-box.usuarios { background-color: var(--tp-success-bg); color: var(--tp-success-text); border-color: var(--tp-success-border); }
+.tp-icon-box.tickets { background-color: var(--tp-warning-bg); color: var(--tp-warning-text); border-color: var(--tp-warning-border); }
 
-/* --- Botón de estadísticas --- */
-.btn-outline-light:hover {
-    background-color: rgba(255, 255, 255, 0.2) !important;
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card:hover {
-        transform: none;
-    }
-    
-    .list-group-item:hover {
-        transform: none;
-    }
+/* Ajuste sutil de los textos dentro del ítem */
+.tp-list-item .tp-body {
+    margin-bottom: 4px; /* Separación de 4px entre título y subtítulo */
+    font-size: 1.05rem; /* Título apenas más grande */
 }

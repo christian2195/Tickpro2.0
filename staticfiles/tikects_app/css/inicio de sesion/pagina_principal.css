@@ -1,0 +1,171 @@
+/* ============================================
+   ESTILOS DEL DASHBOARD / PÁGINA PRINCIPAL
+   ============================================ */
+
+/* Actualización para stat-card */
+.stat-card {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: none;
+    border-left: 5px solid #0d47a1; /* Borde de acento */
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Modificadores de color para diferenciar los estados */
+.stat-card.success { border-left-color: #28a745; }
+.stat-card.warning { border-left-color: #ffc107; }
+.stat-card.info { border-left-color: #17a2b8; }
+
+.stat-card .stat-icon {
+    position: absolute;
+    right: 1.5rem;
+    top: 50%;
+    transform: translateY(-50%);
+    font-size: 2.5rem;
+    opacity: 0.15; /* Icono grande como marca de agua en el fondo */
+}
+
+.stat-card .stat-value {
+    font-size: 2.25rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    line-height: 1.2;
+}
+
+.stat-card .stat-label {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* --- Tarjetas de acción rápida --- */
+.btn-outline-primary.w-100 {
+    padding: 0.75rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-outline-primary.w-100:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
+}
+
+/* --- Últimos tickets --- */
+.table .badge {
+    font-size: 0.7rem;
+    padding: 0.4rem 0.7rem;
+}
+
+.table .btn-sm {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+/* --- Información de contacto (Clientes) --- */
+.contact-card i {
+    background: rgba(13, 202, 240, 0.1);
+    padding: 1rem;
+    border-radius: 50%;
+}
+
+.contact-card h6 {
+    margin-top: 0.5rem;
+    font-weight: 600;
+}
+
+.contact-card p {
+    font-size: 0.9rem;
+}
+
+.action-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #ffffff;
+    border: 1px solid #e9ecef;
+    border-radius: 12px;
+    padding: 1.5rem 1rem;
+    transition: all 0.2s ease-in-out;
+    height: 100%;
+}
+
+.action-card:hover {
+    background: #f0f4ff;
+    border-color: #0d47a1;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(13, 71, 161, 0.1);
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 0.75rem;
+}
+
+.action-text {
+    font-weight: 600;
+    color: #1e293b;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+}
+
+.table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+
+.table thead th {
+    background-color: #f8fafc;
+    color: #64748b;
+    border-bottom: none;
+    padding: 1rem;
+}
+
+.table tbody td {
+    padding: 1rem;
+    vertical-align: middle;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Suavizar el diseño del estado (badges) */
+.badge {
+    padding: 0.5em 0.8em;
+    border-radius: 6px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+.badge.bg-success { background-color: #d1e7dd !important; color: #0f5132; }
+.badge.bg-danger { background-color: #f8d7da !important; color: #842029; }
+
+.card.mb-4:first-of-type {
+    background: linear-gradient(135deg, #ffffff 0%, #f0f4ff 100%);
+    border-left: 5px solid #0d47a1;
+}
+.card.mb-4:first-of-type h2.text-primary {
+    color: #0d47a1 !important;
+    font-weight: 700;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .stat-card .stat-value {
+        font-size: 1.75rem;
+    }
+    
+    .page-header h1 {
+        font-size: 1.25rem;
+    }
+}

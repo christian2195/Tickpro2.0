@@ -1,205 +1,162 @@
 {% extends 'inicio de sesion/base.html' %}
-
 {% load static %}
 
 {% block title %}Gestión de Agentes{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_agentes.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_agentes.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
 <!-- Encabezado de página -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-user-tie me-3"></i> GESTIÓN DE AGENTES
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
-                    <li class="breadcrumb-item active">Agentes</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Plantilla de Agentes</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                <li class="breadcrumb-item active">Agentes del Sistema</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
-    <!-- Mensajes -->
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
+<div class="container-fluid p-0">
 
-    <!-- Botón Crear Agente - abre modal -->
-    <div class="mb-4">
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgente" data-mode="crear">
-            <i class="fas fa-plus-circle me-2"></i> Nuevo Agente
+    <div class="mb-4 d-flex justify-content-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgente" data-mode="crear">
+            <i class="fas fa-user-plus me-2"></i> Nuevo Especialista
         </button>
     </div>
 
-    <!-- Tabla de agentes -->
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Lista de Agentes</h5>
+    <!-- Contenedor Tabla -->
+    <div class="tp-table-container mb-5">
+        <div class="d-flex justify-content-between align-items-center p-4 bg-white border-bottom" style="border-color: var(--tp-border-strong);">
+            <div class="tp-eyebrow m-0">Directorio de Soporte</div>
+            <span class="tp-caption">Total: {{ agentes|length }} operativos</span>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>#</th>
-                            <th>Usuario</th>
-                            <th>Nombre Completo</th>
-                            <th>Email</th>
-                            <th>Fecha Creación</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for agente in agentes %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td><strong>{{ agente.usuario.username }}</strong></td>
-                            <td>{{ agente.nombre }} {{ agente.apellido }}</td>
-                            <td>{{ agente.usuario.email }}</td>
-                            <td>{{ agente.fecha_creacion|date:"d/m/Y H:i" }}</td>
-                            <td>
-                                <div class="btn-group btn-group-sm">
-                                    <button type="button" class="btn btn-primary" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalAgente"
-                                            data-mode="editar"
-                                            data-id="{{ agente.id }}"
-                                            data-username="{{ agente.usuario.username }}"
-                                            data-first_name="{{ agente.nombre }}"
-                                            data-last_name="{{ agente.apellido }}"
-                                            data-email="{{ agente.usuario.email }}">
-                                        <i class="fas fa-edit"></i>
-                                    </button>
-                                    <button type="button" class="btn btn-danger" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalEliminarAgente"
-                                            data-id="{{ agente.id }}"
-                                            data-username="{{ agente.usuario.username }}">
-                                        <i class="fas fa-trash-alt"></i>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4">
-                                <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
-                                <p class="text-muted mb-0">No hay agentes registrados.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        
+        <div class="table-responsive">
+            <table class="table tp-data-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 15%;">Usuario ID</th>
+                        <th style="width: 30%;">Nombre de Pila</th>
+                        <th style="width: 25%;">Correo Institucional</th>
+                        <th style="width: 15%;">Alta en Sistema</th>
+                        <th style="width: 10%;" class="text-end">Operación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for agente in agentes %}
+                    <tr class="tp-table-row">
+                        <td class="tp-caption fw-bold" style="font-variant-numeric: tabular-nums;">{{ forloop.counter }}</td>
+                        <td class="tp-body text-dark fw-medium">{{ agente.usuario.username }}</td>
+                        <td class="tp-body">{{ agente.nombre }} {{ agente.apellido }}</td>
+                        <td class="tp-caption">{{ agente.usuario.email }}</td>
+                        <td class="tp-caption">{{ agente.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="tp-action-btn" data-bs-toggle="modal" data-bs-target="#modalAgente" data-mode="editar" data-id="{{ agente.id }}" data-username="{{ agente.usuario.username }}" data-first_name="{{ agente.nombre }}" data-last_name="{{ agente.apellido }}" data-email="{{ agente.usuario.email }}" title="Modificar Perfil">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button type="button" class="tp-action-btn danger" data-bs-toggle="modal" data-bs-target="#modalEliminarAgente" data-id="{{ agente.id }}" data-username="{{ agente.usuario.username }}" title="Revocar Acceso">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            <div class="tp-empty-state">
+                                <i class="fas fa-user-tie"></i>
+                                <h5 class="tp-h3">Nómina Vacía</h5>
+                                <p class="tp-body mb-0">No se han registrado agentes operativos en la plataforma.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
 <!-- MODAL: Crear/Editar Agente -->
-<!-- ======================================== -->
 <div class="modal fade" id="modalAgente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title" id="modalAgenteTitle">
-                    <i class="fas fa-user-plus me-2"></i> <span id="modalAgenteAction">Nuevo</span> Agente
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0">
+                    <span id="modalAgenteAction">Alta de</span> Especialista
                 </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" id="formAgente" class="needs-validation" novalidate>
                 {% csrf_token %}
-                <div class="modal-body">
-                    <!-- Campos ocultos para modo edición -->
+                <div class="modal-body p-4">
                     <input type="hidden" id="agente_id" name="agente_id" value="">
                     
-                    <div class="row">
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="first_name" name="first_name" required>
-                            <div class="invalid-feedback">El nombre es obligatorio.</div>
+                    <div class="row g-4">
+                        <div class="col-md-6">
+                            <label class="form-label tp-caption text-uppercase fw-bold">Nombre <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control tp-input" id="first_name" name="first_name" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Apellido <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="last_name" name="last_name" required>
-                            <div class="invalid-feedback">El apellido es obligatorio.</div>
+                        <div class="col-md-6">
+                            <label class="form-label tp-caption text-uppercase fw-bold">Apellido <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control tp-input" id="last_name" name="last_name" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Usuario <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="username" name="username" required>
-                            <div class="invalid-feedback">El usuario es obligatorio.</div>
+                        <div class="col-md-6">
+                            <label class="form-label tp-caption text-uppercase fw-bold">Identificador de Acceso <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control tp-input" id="username" name="username" required>
                         </div>
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Email <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control" id="email" name="email" required>
-                            <div class="invalid-feedback">Ingrese un email válido.</div>
+                        <div class="col-md-6">
+                            <label class="form-label tp-caption text-uppercase fw-bold">Correo Institucional <span class="text-danger">*</span></label>
+                            <input type="email" class="form-control tp-input" id="email" name="email" required>
                         </div>
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label" id="passwordLabel">Contraseña <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control" id="password" name="password" placeholder="Mínimo 8 caracteres">
-                            <small class="text-muted" id="passwordHelp">Mínimo 8 caracteres.</small>
+                        <div class="col-md-12">
+                            <label class="form-label tp-caption text-uppercase fw-bold" id="passwordLabel">Credencial de Acceso <span class="text-danger">*</span></label>
+                            <input type="password" class="form-control tp-input" id="password" name="password" placeholder="Requerido mínimo 8 caracteres alfanuméricos">
                         </div>
                     </div>
 
-                    <div class="alert alert-info mt-2">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <small>Usuario y Email deben ser únicos en el sistema.</small>
+                    <div class="tp-alert mt-4 p-3" style="background-color: var(--tp-info-bg); border-color: var(--tp-info-border);">
+                        <p class="tp-caption mb-0 text-dark"><i class="fas fa-info-circle me-2" style="color: var(--tp-info-dot);"></i>La validación exige que el Identificador y Correo sean estrictamente únicos.</p>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary" id="btnGuardarAgente">
-                        <i class="fas fa-save me-2"></i> Guardar
-                    </button>
+                <div class="modal-footer border-top-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+                    <button type="submit" class="btn btn-primary" id="btnGuardarAgente">Procesar Registro</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
-<!-- MODAL: Confirmar Eliminación de Agente -->
-<!-- ======================================== -->
+<!-- MODAL: Eliminar Agente -->
 <div class="modal fade" id="modalEliminarAgente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0 text-danger">Revocación Operativa</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>¿Está seguro de que desea eliminar al agente <strong id="eliminarAgenteNombre"></strong>?</p>
-                <p class="text-muted small">Esta acción eliminará el perfil de agente pero el usuario podrá seguir existiendo en el sistema.</p>
+            <div class="modal-body p-4">
+                <p class="tp-body mb-2">¿Confirmar baja operativa del agente <strong id="eliminarAgenteNombre" class="text-dark"></strong>?</p>
+                <p class="tp-caption text-muted mb-0"><i class="fas fa-exclamation-triangle me-1"></i> El perfil de agente será suprimido, pero la entidad de usuario subyacente permanecerá intacta en el directorio.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Mantener Perfil</button>
                 <form method="post" id="formEliminarAgente">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash-alt me-2"></i> Eliminar
-                    </button>
+                    <button type="submit" class="btn btn-danger">Confirmar Revocación</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
-
 {% endblock %}
 
 {% block extra_js %}

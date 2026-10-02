@@ -1,0 +1,50 @@
+/* ============================================
+   ESTILOS DE GESTIÓN DE SERVICIOS
+   ============================================ */
+
+/* --- Tabla de servicios --- */
+.table .btn-group {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.table tr:hover .btn-group {
+    opacity: 1;
+}
+
+.table .badge.bg-info {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.6rem;
+}
+
+/* --- Modal de servicio --- */
+#modalServicio .modal-header {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+}
+
+#modalServicio .modal-footer .btn-primary {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    border: none;
+}
+
+#modalServicio .alert-info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+#modalServicio .invalid-feedback {
+    font-size: 0.8rem;
+}
+
+/* --- Modal de eliminación --- */
+#modalEliminarServicio .modal-header {
+    background: linear-gradient(135deg, #b71c1c, #c62828);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .table .btn-group {
+        opacity: 1;
+    }
+}

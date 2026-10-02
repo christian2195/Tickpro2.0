@@ -1,258 +1,224 @@
 {% extends 'inicio de sesion/base.html' %}
-
 {% load static %}
 
 {% block title %}Gestión de Grupos de Agentes{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_grupos.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_grupos.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
-<!-- Encabezado -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-users me-3"></i> GESTIÓN DE GRUPOS
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
-                    <li class="breadcrumb-item active">Grupos de Agentes</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Niveles de Soporte</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                <li class="breadcrumb-item active">Grupos Especializados</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
-    <!-- Mensajes -->
+<div class="container-fluid p-0">
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show tp-alert" role="alert">
+                    <div class="d-flex align-items-center">
+                        <div class="tp-alert-dot bg-{% if message.tags == 'error' %}danger{% else %}success{% endif %}"></div>
+                        <span>{{ message }}</span>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
     <!-- Controles -->
-    <div class="d-flex justify-content-between mb-4 flex-wrap gap-2">
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalGrupo" data-mode="crear">
-            <i class="fas fa-plus-circle me-2"></i> Nuevo Grupo
-        </button>
+    <div class="d-flex justify-content-end mb-5 gap-3">
         <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarAgente">
-            <i class="fas fa-user-plus me-2"></i> Asignar Agente a Grupo
+            <i class="fas fa-user-plus me-2"></i> Adjudicar Agente
+        </button>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalGrupo" data-mode="crear">
+            <i class="fas fa-layer-group me-2"></i> Registrar Grupo
         </button>
     </div>
 
-    <!-- ===== LISTA DE GRUPOS ===== -->
-    <div class="row">
+    <!-- ===== MATRIZ DE GRUPOS ===== -->
+    <div class="row g-4 mb-5">
         {% for grupo in grupos_agentes %}
-        <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i> {{ grupo.nombre }}</h5>
-                    <div>
-                        <button type="button" class="btn btn-sm btn-light me-1" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#modalGrupo"
-                                data-mode="editar"
-                                data-id="{{ grupo.id }}"
-                                data-nombre="{{ grupo.nombre }}"
-                                data-descripcion="{{ grupo.descripcion }}">
-                            <i class="fas fa-edit text-primary"></i>
+        <div class="col-md-6 col-lg-4">
+            <div class="tp-group-card">
+                <div class="tp-card-header d-flex justify-content-between align-items-center">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="tp-indicator" style="background-color: var(--tp-success-dot);"></div>
+                        <h5 class="tp-h3 m-0">{{ grupo.nombre }}</h5>
+                    </div>
+                    <div class="d-flex gap-2">
+                        <button type="button" class="tp-action-btn" data-bs-toggle="modal" data-bs-target="#modalGrupo" data-mode="editar" data-id="{{ grupo.id }}" data-nombre="{{ grupo.nombre }}" data-descripcion="{{ grupo.descripcion }}" title="Configurar Nivel">
+                            <i class="fas fa-edit" style="font-size: 0.8rem;"></i>
                         </button>
-                        <button type="button" class="btn btn-sm btn-light" 
-                                data-bs-toggle="modal" 
-                                data-bs-target="#modalEliminarGrupo"
-                                data-id="{{ grupo.id }}"
-                                data-nombre="{{ grupo.nombre }}">
-                            <i class="fas fa-trash-alt text-danger"></i>
+                        <button type="button" class="tp-action-btn danger" data-bs-toggle="modal" data-bs-target="#modalEliminarGrupo" data-id="{{ grupo.id }}" data-nombre="{{ grupo.nombre }}" title="Desarticular">
+                            <i class="fas fa-trash-alt" style="font-size: 0.8rem;"></i>
                         </button>
                     </div>
                 </div>
-                <div class="card-body">
-                    <p class="text-muted small">{{ grupo.descripcion }}</p>
-                    <hr>
-                    <h6 class="text-secondary"><i class="fas fa-user-tie me-1"></i> Miembros:</h6>
+                <div class="tp-card-body d-flex flex-column">
+                    <p class="tp-caption mb-4 pb-3 border-bottom" style="border-color: var(--tp-border-light) !important; min-height: 48px;">
+                        {{ grupo.descripcion }}
+                    </p>
+                    
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <span class="tp-eyebrow m-0 border-0">Nómina Adjudicada</span>
+                    </div>
+
                     {% with miembros=grupo.agentes_por_grupos_set.all %}
                         {% if miembros %}
-                            <ul class="list-unstyled">
+                            <ul class="tp-member-list mb-auto">
                                 {% for gm in miembros %}
-                                <li class="d-flex justify-content-between align-items-center py-1 border-bottom">
-                                    <span>
-                                        <i class="fas fa-user text-primary me-1"></i>
-                                        {{ gm.agente.usuario.username }}
-                                        <small class="text-muted">({{ gm.agente.usuario.first_name }})</small>
-                                    </span>
-                                    <button type="button" class="btn btn-sm btn-outline-danger" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalQuitarAgente"
-                                            data-grupo-agente-id="{{ gm.id }}"
-                                            data-usuario="{{ gm.agente.usuario.username }}"
-                                            data-grupo="{{ grupo.nombre }}">
+                                <li class="tp-member-item">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-user tp-caption opacity-50 me-2"></i>
+                                        <span class="tp-body fw-medium text-dark">{{ gm.agente.usuario.username }}</span>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-outline-danger px-2 py-1 shadow-none border-0" data-bs-toggle="modal" data-bs-target="#modalQuitarAgente" data-grupo-agente-id="{{ gm.id }}" data-usuario="{{ gm.agente.usuario.username }}" data-grupo="{{ grupo.nombre }}" title="Desvincular">
                                         <i class="fas fa-times"></i>
                                     </button>
                                 </li>
                                 {% endfor %}
                             </ul>
                         {% else %}
-                            <p class="text-muted text-center mb-0"><small>No hay agentes en este grupo</small></p>
+                            <p class="tp-caption opacity-50 text-center py-4 mb-auto">Cuadrilla Vacía</p>
                         {% endif %}
-                        <small class="text-muted">Total: {{ miembros|length }} agente(s)</small>
+                        <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center" style="border-color: var(--tp-border-light) !important;">
+                            <span class="tp-caption text-uppercase fw-bold">Capacidad</span>
+                            <span class="tp-badge info px-2 py-1">{{ miembros|length }}</span>
+                        </div>
                     {% endwith %}
                 </div>
             </div>
         </div>
         {% empty %}
         <div class="col-12">
-            <div class="alert alert-info text-center">
-                <i class="fas fa-info-circle fa-2x mb-2"></i>
-                <p class="mb-0">No hay grupos creados.</p>
+            <div class="tp-empty-state">
+                <i class="fas fa-layer-group"></i>
+                <h5 class="tp-h3">Arquitectura Plana</h5>
+                <p class="tp-body mb-0">No se han definido niveles de soporte o cuadrillas de trabajo.</p>
             </div>
         </div>
         {% endfor %}
     </div>
 </div>
 
-<!-- ======================================== -->
 <!-- MODAL: Crear/Editar Grupo -->
-<!-- ======================================== -->
 <div class="modal fade" id="modalGrupo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-edit me-2"></i> <span id="modalGrupoAction">Nuevo</span> Grupo
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0"><span id="modalGrupoAction">Modelar</span> Cuadrilla</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <!-- CAMBIADO: action apunta a gestion_grupos -->
             <form method="post" id="formGrupo" action="{% url 'gestion_grupos' %}" class="needs-validation" novalidate>
                 {% csrf_token %}
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <input type="hidden" id="grupo_id" name="grupo_id" value="">
-                    <div class="mb-3">
-                        <label class="form-label">Nombre <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="grupo_nombre" name="nombre" required>
+                    <div class="mb-4">
+                        <label class="form-label tp-caption text-uppercase fw-bold">Nomenclatura (Nivel) <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control tp-input" id="grupo_nombre" name="nombre" placeholder="Ej: Soporte Avanzado N2" required>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Descripción <span class="text-danger">*</span></label>
-                        <textarea class="form-control" id="grupo_descripcion" name="descripcion" rows="3" required></textarea>
+                        <label class="form-label tp-caption text-uppercase fw-bold">Misión Operativa <span class="text-danger">*</span></label>
+                        <textarea class="form-control tp-input" id="grupo_descripcion" name="descripcion" rows="3" placeholder="Contexto técnico de las resoluciones" required></textarea>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save me-2"></i> Guardar
-                    </button>
+                <div class="modal-footer border-top-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+                    <button type="submit" class="btn btn-primary">Consolidar Nivel</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
-<!-- MODAL: Asignar Agente a Grupo -->
-<!-- ======================================== -->
+<!-- MODAL: Asignar Agente -->
 <div class="modal fade" id="modalAsignarAgente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-plus me-2"></i> Asignar Agente a Grupo
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0">Inyección de Personal</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <!-- CAMBIADO: action apunta a asignar_agente_grupo -->
             <form method="post" action="{% url 'asignar_agente_grupo' %}" class="needs-validation" novalidate>
                 {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Agente <span class="text-danger">*</span></label>
-                        <select class="form-select" name="agente" required>
-                            <option value="" disabled selected>-- Seleccione un agente --</option>
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label tp-caption text-uppercase fw-bold">Matrícula Operativa <span class="text-danger">*</span></label>
+                        <select class="form-select tp-input" name="agente" required>
+                            <option value="" disabled selected>-- Individualice al analista --</option>
                             {% for agente in agentes %}
                                 <option value="{{ agente.id }}">{{ agente.usuario.username }} ({{ agente.nombre }} {{ agente.apellido }})</option>
                             {% endfor %}
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Grupo <span class="text-danger">*</span></label>
-                        <select class="form-select" name="grupo" required>
-                            <option value="" disabled selected>-- Seleccione un grupo --</option>
+                        <label class="form-label tp-caption text-uppercase fw-bold">Cuadrilla Destino <span class="text-danger">*</span></label>
+                        <select class="form-select tp-input" name="grupo" required>
+                            <option value="" disabled selected>-- Nivel de adjudicación --</option>
                             {% for grupo in grupos_agentes %}
                                 <option value="{{ grupo.id }}">{{ grupo.nombre }}</option>
                             {% endfor %}
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-check me-2"></i> Asignar
-                    </button>
+                <div class="modal-footer border-top-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+                    <button type="submit" class="btn btn-primary">Adjudicar Agente</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
 <!-- MODAL: Eliminar Grupo -->
-<!-- ======================================== -->
 <div class="modal fade" id="modalEliminarGrupo" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i> Eliminar Grupo
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0 text-danger">Desarticulación de Nivel</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>¿Está seguro de eliminar el grupo <strong id="eliminarGrupoNombre"></strong>?</p>
-                <p class="text-muted small">Los agentes asignados a este grupo no serán eliminados.</p>
+            <div class="modal-body p-4">
+                <p class="tp-body mb-2">¿Autoriza la fragmentación total de la cuadrilla <strong id="eliminarGrupoNombre" class="text-dark"></strong>?</p>
+                <p class="tp-caption text-muted mb-0">El personal quedará flotante (sin pérdida de credenciales).</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Mantener Nivel</button>
                 <form method="post" id="formEliminarGrupo">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash-alt me-2"></i> Eliminar
-                    </button>
+                    <button type="submit" class="btn btn-danger">Desarticular</button>
                 </form>
             </div>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
-<!-- MODAL: Quitar Agente del Grupo -->
-<!-- ======================================== -->
+<!-- MODAL: Quitar Agente -->
 <div class="modal fade" id="modalQuitarAgente" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-warning text-dark">
-                <h5 class="modal-title">
-                    <i class="fas fa-user-minus me-2"></i> Quitar Agente del Grupo
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0 text-danger">Extracción Operativa</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>¿Está seguro de quitar a <strong id="quitarAgenteUsuario"></strong> del grupo <strong id="quitarAgenteGrupo"></strong>?</p>
+            <div class="modal-body p-4">
+                <p class="tp-body mb-0">¿Retirar la credencial <strong id="quitarAgenteUsuario" class="text-dark"></strong> de los activos del nivel <strong id="quitarAgenteGrupo" class="text-dark"></strong>?</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <!-- CAMBIADO: action apunta a quitar_agente_grupo -->
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Mantener Vínculo</button>
                 <form method="post" id="formQuitarAgente" action="{% url 'quitar_agente_grupo' 0 %}">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-user-minus me-2"></i> Quitar
-                    </button>
+                    <button type="submit" class="btn btn-danger">Extraer Agente</button>
                 </form>
             </div>
         </div>

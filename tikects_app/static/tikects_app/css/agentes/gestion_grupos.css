@@ -2,55 +2,52 @@
    ESTILOS DE GESTIÓN DE GRUPOS
    ============================================ */
 
-/* --- Cards de grupos --- */
-.card .card-header {
-    border-radius: 12px 12px 0 0 !important;
+/* --- Card de Grupo --- */
+.tp-group-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
-
-.card .card-header .btn-light {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: #fff;
-    transition: all 0.2s ease;
+.tp-group-card .tp-card-header {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
 }
-
-.card .card-header .btn-light:hover {
-    background: rgba(255, 255, 255, 0.4);
-}
-
-.card .card-header .btn-light i {
-    font-size: 0.8rem;
+.tp-group-card .tp-card-body {
+    padding: var(--tp-sp-24);
+    flex-grow: 1;
 }
 
 /* --- Lista de miembros --- */
-.card .list-unstyled li {
-    font-size: 0.9rem;
-    transition: background 0.2s ease;
+.tp-member-list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+.tp-member-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--tp-sp-12) 0;
+    border-bottom: 1px solid var(--tp-border-light);
+}
+.tp-member-item:last-child {
+    border-bottom: none;
 }
 
-.card .list-unstyled li:hover {
-    background: #f8f9fa;
+.tp-empty-state {
+    padding: var(--tp-sp-64) var(--tp-sp-24);
+    text-align: center;
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
 }
-
-.card .list-unstyled .btn-outline-danger {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.7rem;
-}
-
-.card .list-unstyled .btn-outline-danger:hover {
-    background: #dc3545;
-    color: #fff;
-}
-
-/* --- Badges --- */
-.card .badge.bg-secondary {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.6rem;
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card .card-body {
-        padding: 1rem;
-    }
+.tp-empty-state i {
+    font-size: 3rem;
+    color: var(--tp-ink-ter);
+    opacity: 0.5;
+    margin-bottom: var(--tp-sp-16);
 }

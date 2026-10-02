@@ -1,87 +1,60 @@
 /* ============================================
-   ESTILOS DE LISTADO DE TICKETS
+   ESTILOS DE LISTADO DE TICKETS (REDISEÑO)
    ============================================ */
 
-/* --- Botones de filtro --- */
-.btn-group .btn {
+/* Botones de filtro: unificados y sin colores semánticos en estado inactivo */
+.tp-filter-group .btn {
+    border-radius: var(--tp-rad-md);
     font-weight: 500;
-    padding: 0.5rem 1rem;
+    letter-spacing: 0.02em;
+    margin-right: var(--tp-sp-8);
+    margin-bottom: var(--tp-sp-8);
+    border: 1px solid var(--tp-border-strong);
+    color: var(--tp-ink-sec);
+    background-color: var(--tp-surface);
+    box-shadow: none !important;
+}
+.tp-filter-group .btn.active {
+    background-color: var(--tp-accent);
+    color: #ffffff;
+    border-color: var(--tp-accent);
+}
+.tp-filter-group .btn:hover:not(.active) {
+    background-color: var(--tp-surface-alt);
+    color: var(--tp-ink);
 }
 
-/* --- Búsqueda --- */
-.input-group .form-control:focus {
-    border-color: #1565c0;
+/* Búsqueda */
+.tp-search-input {
+    border-radius: var(--tp-rad-md) 0 0 var(--tp-rad-md);
+    border: 1px solid var(--tp-border-strong);
+    background-color: var(--tp-surface);
+    box-shadow: none !important;
 }
-
-.input-group .btn-primary {
-    background: linear-gradient(135deg, #0d47a1, #1565c0);
-    border: none;
+.tp-search-input:focus {
+    border-color: var(--tp-accent);
+    outline: 2px solid var(--tp-accent-soft);
 }
-
-/* --- Tarjetas de estadísticas --- */
-.card.text-white .card-body {
-    padding: 1rem 1.25rem;
+.tp-search-btn {
+    border-radius: 0 var(--tp-rad-md) var(--tp-rad-md) 0;
+    border: 1px solid var(--tp-accent);
+    background-color: var(--tp-accent);
+    color: #ffffff;
 }
+.tp-search-btn:hover { background-color: var(--tp-accent-hover); color: #ffffff; }
 
-.card.text-white .card-title {
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    opacity: 0.8;
-}
-
-.card.text-white h3 {
-    font-size: 1.75rem;
-    font-weight: 700;
-}
-
-/* --- Tabla de tickets --- */
-.table .badge {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.6rem;
-}
-
-.table .btn-group .btn {
-    padding: 0.2rem 0.4rem;
-    font-size: 0.75rem;
-}
-
-.table .btn-group .btn-primary {
-    background: linear-gradient(135deg, #0d47a1, #1565c0);
-    border: none;
-}
-
-.table .btn-group .btn-warning {
-    background: linear-gradient(135deg, #f57f17, #f9a825);
-    border: none;
-    color: #fff;
-}
-
-/* --- Paginación --- */
-.pagination .page-link {
-    border: none;
-    border-radius: 8px;
+/* Paginación minimalista */
+.tp-pagination .page-link {
+    border: 1px solid var(--tp-border-strong);
+    color: var(--tp-ink-sec);
     margin: 0 2px;
+    border-radius: var(--tp-rad-sm);
 }
-
-.pagination .page-item.active .page-link {
-    background: linear-gradient(135deg, #0d47a1, #1565c0);
-    color: #fff;
+.tp-pagination .page-item.active .page-link {
+    background-color: var(--tp-accent);
+    border-color: var(--tp-accent);
+    color: #ffffff;
 }
-
-/* --- Tooltips --- */
-[data-bs-toggle="tooltip"] {
-    cursor: help;
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card.text-white h3 {
-        font-size: 1.25rem;
-    }
-    
-    .btn-group .btn {
-        font-size: 0.8rem;
-        padding: 0.3rem 0.6rem;
-    }
+.tp-pagination .page-link:hover:not(.active) {
+    background-color: var(--tp-surface-alt);
 }

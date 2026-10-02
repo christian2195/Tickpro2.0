@@ -1,6 +1,8 @@
 from django.db import models
 from django.contrib.auth.models import User
 import datetime
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 
 # ============================================
 # OPCIONES PARA LOS CAMPOS
@@ -181,3 +183,20 @@ class AgenteGenerico(models.Model):
     
     def __str__(self):
         return f"{self.servicio.nombre} - {self.agente_actual.nombre_usuario}"
+
+@receiver(post_save, sender=User)
+def crear_perfil_agente_admin(sender, instance, created, **kwargs):
+    """
+    Crea automáticamente un perfil de Agente cuando se registra un superusuario
+    (por ejemplo, al usar el comando createsuperuser en la consola).
+    """
+    if created and instance.is_superuser:
+        Agentes.objects.get_or_create(
+            usuario=instance,
+            defaults={
+                'nombre_usuario': instance.username,
+                'nombre': instance.first_name or 'Administrador',
+                'apellido': instance.last_name or 'Sistema',
+                'correo': instance.email or f"{instance.username}@sistema.local"
+            }
+        )

@@ -13,41 +13,38 @@ document.addEventListener('DOMContentLoaded', function() {
             var button = event.relatedTarget;
             var mode = button.getAttribute('data-mode');
             var actionSpan = document.getElementById('modalClienteAction');
-            var btnGuardar = document.getElementById('btnGuardarCliente');
             var passwordInput = document.getElementById('cliente_password');
-            var passwordRequired = document.getElementById('cliente_password_required');
-            var passwordFeedback = document.getElementById('cliente_password_feedback');
+            var passwordRequiredAsterisk = document.getElementById('cliente_password_required');
 
             var form = document.getElementById('formCliente');
             form.reset();
             form.classList.remove('was-validated');
 
             if (mode === 'crear') {
-                if (actionSpan) actionSpan.textContent = 'Nuevo';
-                if (btnGuardar) btnGuardar.innerHTML = '<i class="fas fa-save me-2"></i> Crear';
+                if (actionSpan) actionSpan.textContent = 'Alta de';
                 document.getElementById('cliente_id').value = '';
-                if (passwordInput) {
-                    passwordInput.required = true;
-                    passwordInput.placeholder = 'Ingrese una contraseña';
-                }
-                if (passwordRequired) passwordRequired.textContent = '*';
-                if (passwordFeedback) passwordFeedback.textContent = 'La contraseña es obligatoria para nuevos usuarios.';
+                // CORRECCIÓN AQUÍ: Apunta a la ruta correcta definida en urls.py
+                form.action = '/clientes/crear/'; 
+                
+                // En creación, la clave es obligatoria
+                passwordInput.required = true;
+                if (passwordRequiredAsterisk) passwordRequiredAsterisk.style.display = 'inline';
             } else if (mode === 'editar') {
-                if (actionSpan) actionSpan.textContent = 'Editar';
-                if (btnGuardar) btnGuardar.innerHTML = '<i class="fas fa-save me-2"></i> Actualizar';
-                document.getElementById('cliente_id').value = button.getAttribute('data-id');
+                if (actionSpan) actionSpan.textContent = 'Modificar';
+                var id = button.getAttribute('data-id');
+                document.getElementById('cliente_id').value = id;
                 document.getElementById('cliente_nombre').value = button.getAttribute('data-nombre');
                 document.getElementById('cliente_apellido').value = button.getAttribute('data-apellido');
                 document.getElementById('cliente_username').value = button.getAttribute('data-username');
-                document.getElementById('cliente_email').value = button.getAttribute('data-email') || '';
-                document.getElementById('cliente_telefono').value = button.getAttribute('data-telefono') || '';
-                document.getElementById('cliente_gerencia').value = button.getAttribute('data-gerencia') || '';
-                if (passwordInput) {
-                    passwordInput.required = false;
-                    passwordInput.placeholder = 'Dejar en blanco para mantener actual';
-                }
-                if (passwordRequired) passwordRequired.textContent = '(opcional)';
-                if (passwordFeedback) passwordFeedback.textContent = 'Solo complete si desea cambiar la contraseña.';
+                document.getElementById('cliente_email').value = button.getAttribute('data-email');
+                document.getElementById('cliente_telefono').value = button.getAttribute('data-telefono');
+                document.getElementById('cliente_gerencia').value = button.getAttribute('data-gerencia');
+                
+                form.action = '/clientes/editar/' + id + '/';
+                
+                // En edición, la clave es opcional
+                passwordInput.required = false;
+                if (passwordRequiredAsterisk) passwordRequiredAsterisk.style.display = 'none';
             }
         });
     }

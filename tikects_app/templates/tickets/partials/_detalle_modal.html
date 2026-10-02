@@ -1,0 +1,79 @@
+<div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+    <h5 class="modal-title tp-h3 m-0">
+        Ticket #{{ tikect.id }}
+        <span class="tp-badge ms-2 {% if tikect.estado == 'cerrado' %}danger{% else %}success{% endif %}">
+            {% if tikect.estado == 'cerrado' %}CERRADO{% else %}ABIERTO{% endif %}
+        </span>
+    </h5>
+    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+</div>
+<div class="modal-body p-4">
+    <div class="row g-4">
+        <!-- Columna Izquierda: Detalles técnicos -->
+        <div class="col-md-8">
+            <h3 class="tp-h2 mb-4">{{ tikect.titulo }}</h3>
+            
+            <div class="d-flex flex-wrap gap-4 mb-4">
+                <div>
+                    <span class="tp-caption text-uppercase fw-bold d-block">Apertura</span>
+                    <span class="tp-body text-dark">{{ tikect.fecha_creacion|date:"d/m/Y h:i A" }}</span>
+                </div>
+                <div>
+                    <span class="tp-caption text-uppercase fw-bold d-block">Servicio Enrutado</span>
+                    <span class="tp-body text-dark">{{ tikect.servicio.nombre }}</span>
+                </div>
+            </div>
+            
+            <div class="mb-4">
+                <span class="tp-caption text-uppercase fw-bold d-block mb-2">Memoria Descriptiva</span>
+                <div class="tp-body" style="background-color: var(--tp-surface-alt); border: 1px solid var(--tp-border-strong); border-radius: var(--tp-rad-md); padding: var(--tp-sp-16);">
+                    {{ tikect.descripcion|linebreaks }}
+                </div>
+            </div>
+            
+            {% if tikect.cerrado and tikect.descripcion_solucion %}
+            <div class="mt-4 p-4" style="background-color: var(--tp-success-bg); border: 1px solid var(--tp-success-border); border-left: 4px solid var(--tp-success-dot); border-radius: var(--tp-rad-md);">
+                <span class="tp-caption text-uppercase fw-bold d-flex align-items-center text-dark mb-2">
+                    <i class="fas fa-check-circle me-2" style="color: var(--tp-success-dot);"></i> Memoria Técnica de Resolución
+                </span>
+                <p class="mb-0 tp-body text-dark">{{ tikect.descripcion_solucion }}</p>
+                <div class="mt-3 pt-3 border-top" style="border-color: rgba(0,0,0,0.1) !important;">
+                    <small class="tp-caption text-dark">Operador: <strong>{{ tikect.cerrado_por_agente.usuario.username }}</strong> &mdash; {{ tikect.fecha_cierre|date:"d/m/Y h:i A" }}</small>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Columna Derecha: Contexto y Trazabilidad -->
+        <div class="col-md-4 border-start ps-md-4" style="border-color: var(--tp-border-light) !important;">
+            <div class="mb-4">
+                <div class="tp-eyebrow mb-2">Datos del Requirente</div>
+                <p class="mb-1"><span class="tp-caption d-block">Identificador:</span> <span class="tp-body fw-medium text-dark">{{ tikect.usuario.username }}</span></p>
+                <!-- CORRECCIÓN AQUÍ: tikect.cliente.gerencia.nombre -->
+                <p class="mb-1"><span class="tp-caption d-block">Gerencia Origen:</span> <span class="tp-body fw-medium text-dark">{{ tikect.cliente.gerencia.nombre|default:"Sin asignar" }}</span></p>
+            </div>
+            
+            {% if reasignaciones %}
+            <div class="mt-4 pt-4 border-top" style="border-color: var(--tp-border-light) !important;">
+                <div class="tp-eyebrow mb-3">Trazabilidad</div>
+                <ul class="list-unstyled mb-0">
+                    {% for reasignacion in reasignaciones %}
+                    <li class="mb-3 pb-2 border-bottom" style="border-color: var(--tp-border-light) !important;">
+                        <small class="tp-caption d-block mb-1">{{ reasignacion.fecha_reasignacion|date:"d/m/Y h:i A" }}</small>
+                        <div class="d-flex align-items-center tp-caption text-dark">
+                            <i class="fas fa-level-up-alt fa-rotate-90 text-muted me-2"></i> {{ reasignacion.agente_anterior.usuario.username }}
+                        </div>
+                        <div class="d-flex align-items-center tp-caption text-dark">
+                            <i class="fas fa-arrow-right text-success me-2"></i> {{ reasignacion.agente_nuevo.usuario.username }}
+                        </div>
+                    </li>
+                    {% endfor %}
+                </ul>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+<div class="modal-footer border-top-0 px-4 pb-4">
+    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cerrar Visor</button>
+</div>

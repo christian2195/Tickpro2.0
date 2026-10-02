@@ -1,93 +1,89 @@
 /* ============================================
-   ESTILOS DEL DASHBOARD / PÁGINA PRINCIPAL
+   ESTILOS DEL DASHBOARD - ALTO CONTRASTE ESTRUCTURAL
    ============================================ */
 
-/* --- Tarjetas de estadísticas --- */
-.stat-card {
-    background: white;
-    border-radius: 12px;
-    padding: 1.5rem;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    transition: all 0.3s ease;
-    height: 100%;
+/* --- Card de Bienvenida --- */
+/* Decisión: Borde completo fuerte y línea izquierda azul pesada como firma */
+.tp-welcome-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-left: 4px solid var(--tp-accent);
+    border-radius: var(--tp-rad-lg);
+    padding: var(--tp-sp-32);
+}
+
+/* --- Bloques Estadísticos --- */
+.tp-stat-block {
+    background-color: var(--tp-surface);
+    /* Decisión: Contención clara con borde fuerte sobre el fondo roto */
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    padding: var(--tp-sp-24);
+    /* Línea superior para identificar la sección */
+    border-top: 3px solid var(--tp-accent);
     display: flex;
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    transition: all var(--tp-trans);
 }
 
-.stat-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
-}
-
-.stat-card .stat-icon {
-    font-size: 2rem;
-    margin-bottom: 0.5rem;
-    color: #0d47a1;
-}
-
-.stat-card .stat-value {
-    font-size: 2.25rem;
-    font-weight: 700;
-    color: #1a1a2e;
-    line-height: 1.2;
-}
-
-.stat-card .stat-label {
-    font-size: 0.85rem;
-    color: #6c757d;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* --- Tarjetas de acción rápida --- */
-.btn-outline-primary.w-100 {
-    padding: 0.75rem;
-    font-weight: 600;
-    transition: all 0.3s ease;
-}
-
-.btn-outline-primary.w-100:hover {
+/* Micro-interacción estricta */
+.tp-stat-block:hover {
+    border-color: var(--tp-ink-sec); /* Oscurece el borde en hover */
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
 }
 
-/* --- Últimos tickets --- */
-.table .badge {
-    font-size: 0.7rem;
-    padding: 0.4rem 0.7rem;
-}
-
-.table .btn-sm {
-    padding: 0.2rem 0.5rem;
-    font-size: 0.8rem;
-}
-
-/* --- Información de contacto (Clientes) --- */
-.contact-card i {
-    background: rgba(13, 202, 240, 0.1);
-    padding: 1rem;
-    border-radius: 50%;
-}
-
-.contact-card h6 {
-    margin-top: 0.5rem;
+.tp-stat-label {
+    font-size: 0.75rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tp-ink-sec);
+    margin-bottom: var(--tp-sp-12);
 }
 
-.contact-card p {
-    font-size: 0.9rem;
+.tp-stat-value {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--tp-ink);
+    line-height: 1;
+    letter-spacing: -0.04em;
 }
 
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .stat-card .stat-value {
-        font-size: 1.75rem;
-    }
-    
-    .page-header h1 {
-        font-size: 1.25rem;
-    }
+.tp-stat-block.tp-border-accent { border-top-color: var(--tp-accent); }
+.tp-stat-block.tp-border-success { border-top-color: var(--tp-success-dot); }
+.tp-stat-block.tp-border-warning { border-top-color: var(--tp-warning-dot); }
+
+/* --- Interacciones de la Tabla de Tickets --- */
+.tp-table-row { 
+    transition: all var(--tp-trans); 
+    /* Borde izquierdo transparente para reservar el espacio del hover */
+    border-left: 3px solid transparent; 
+}
+
+/* Decisión: Hover funcional. Fondo altera y borde izquierdo acentúa selección */
+.tp-table-row:hover td { 
+    background-color: #F8FAFC; 
+}
+.tp-table-row:hover {
+    border-left-color: var(--tp-accent);
+}
+
+/* Detalle de oficio: La columna ID en tipografía tabular (números alineados) */
+.tp-table-row td:first-child {
+    color: var(--tp-ink-sec);
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+}
+
+.tp-action-link {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--tp-ink-sec);
+    text-decoration: none;
+    transition: color var(--tp-trans);
+}
+.tp-action-link:hover {
+    color: var(--tp-accent);
+    text-decoration: underline;
+    text-underline-offset: 4px;
 }

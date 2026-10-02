@@ -1,70 +1,55 @@
 /* ============================================
-   ESTILOS DE CREACIÓN DE TICKETS
+   ESTILOS DE CREACIÓN DE TICKET (REDISEÑO)
    ============================================ */
 
-/* --- Cabecera --- */
-.card-header {
-    background: linear-gradient(135deg, #0d47a1, #1565c0) !important;
+.tp-card-header {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 1px solid var(--tp-border-strong);
+    color: var(--tp-ink);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
+    border-radius: var(--tp-rad-lg) var(--tp-rad-lg) 0 0;
 }
 
-/* --- Formulario --- */
-.card .form-select,
-.card .form-control {
-    font-size: 0.95rem;
+/* Inputs consistentes con el diseño de login */
+.tp-input {
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-md);
+    padding: 0.75rem 1rem;
+    background-color: var(--tp-bg-base);
+    color: var(--tp-ink);
+    box-shadow: none !important;
+    transition: all var(--tp-trans);
+}
+.tp-input:focus {
+    background-color: var(--tp-surface);
+    border-color: var(--tp-accent);
+    outline: 3px solid var(--tp-accent-soft);
+    outline-offset: 0;
 }
 
-.card .form-select:focus,
-.card .form-control:focus {
-    border-color: #1565c0;
-    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.25);
+/* Sobreescritura estructural de Select2 para empatarlo al minimalismo */
+.select2-container--default .select2-selection--single {
+    height: 3.25rem !important; /* Altura exacta para coincidir con los inputs de texto */
+    padding: 0.5rem 0.5rem;
+    border: 1px solid var(--tp-border-strong) !important;
+    border-radius: var(--tp-rad-md) !important;
+    background-color: var(--tp-bg-base) !important;
+    display: flex;
+    align-items: center;
 }
 
-.card .alert-info {
-    background-color: #e3f2fd;
-    border-color: #90caf9;
-    color: #0d47a1;
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    color: var(--tp-ink) !important;
+    line-height: 1.5 !important;
+    padding-left: 0.5rem !important;
 }
 
-/* --- Select2 --- */
-.select2-container .select2-selection--single {
-    height: 38px;
-    border-color: #ced4da;
-    border-radius: 6px;
+.select2-container--default .select2-selection--single .select2-selection__arrow {
+    height: 100% !important;
+    right: 10px !important;
 }
 
-.select2-container .select2-selection--single .select2-selection__rendered {
-    line-height: 38px;
-    padding-left: 12px;
-}
-
-.select2-container .select2-selection--single .select2-selection__arrow {
-    height: 36px;
-}
-
-.select2-container--default .select2-selection--single .select2-selection__placeholder {
-    color: #6c757d;
-}
-
-/* --- Botones --- */
-.card .btn-secondary {
-    background: linear-gradient(135deg, #424242, #616161);
-    border: none;
-}
-
-.card .btn-success {
-    background: linear-gradient(135deg, #2e7d32, #388e3c);
-    border: none;
-}
-
-.card .btn-success:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(46, 125, 50, 0.3);
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card .btn {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.8rem;
-    }
+/* Oculta de forma estricta el select original para evitar dobles cajas */
+select.tp-input.select2-hidden-accessible {
+    display: none !important;
 }

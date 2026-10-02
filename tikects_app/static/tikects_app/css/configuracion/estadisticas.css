@@ -1,54 +1,138 @@
 /* ============================================
-   ESTILOS DE ESTADÍSTICAS
+   ESTILOS DE ESTADÍSTICAS (DASHBOARD ANALÍTICO)
    ============================================ */
 
-/* --- Tarjetas de estadísticas --- */
-.card.text-white .card-body {
-    padding: 1.25rem;
+/* --- Tarjetas de Gráficos --- */
+.tp-chart-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    overflow: hidden;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
-.card.text-white h2 {
-    font-weight: 700;
-    font-size: 2rem;
+.tp-chart-card .tp-card-header {
+    background-color: var(--tp-surface);
+    border-bottom: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-24);
+    margin-bottom: 0;
 }
 
-.card.text-white .opacity-50 {
-    opacity: 0.5;
+.tp-chart-body {
+    padding: var(--tp-sp-24);
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    background-color: var(--tp-surface);
 }
 
-.card.text-white small {
-    font-size: 0.7rem;
-    opacity: 0.8;
+.tp-chart-wrapper {
+    position: relative;
+    width: 100%;
+    height: 260px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
-/* --- Gráficos --- */
-canvas {
-    max-width: 100%;
-    max-height: 100%;
+.tp-chart-wrapper.full-width {
+    height: 240px;
 }
 
-/* --- Tabla de agentes --- */
-.table .badge {
+.tp-chart-wrapper canvas {
+    max-width: 100% !important;
+    max-height: 100% !important;
+}
+
+.tp-chart-summary {
+    width: 100%;
+    margin-top: var(--tp-sp-24);
+    padding-top: var(--tp-sp-16);
+    border-top: 1px solid var(--tp-border);
+    display: flex;
+    flex-direction: column;
+    gap: var(--tp-sp-8);
+}
+
+/* --- Tabla Analítica con aire estructural --- */
+.tp-analytics-table-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    overflow: hidden;
+}
+
+/* El header tiene su línea contenida ALINEADA con el padding de la tabla */
+.tp-analytics-table-card .tp-card-header-inner {
+    padding: 0;
+    margin: var(--tp-sp-24) var(--tp-sp-24) 0 var(--tp-sp-24);
+    padding-bottom: var(--tp-sp-16);
+    border-bottom: 1px solid var(--tp-border-strong);
+}
+
+.tp-analytics-table-card .tp-table-body {
+    padding: var(--tp-sp-24);
+}
+
+/* Redefinición estricta de la tabla para que luzca encapsulada */
+.tp-data-table {
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-md);
+    overflow: hidden;
+    border-collapse: separate; /* Necesario para que el radio aplique junto al borde */
+    border-spacing: 0;
+}
+
+.tp-data-table thead th {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 2px solid var(--tp-border-strong) !important;
+    padding: var(--tp-sp-16);
+    color: var(--tp-ink-sec);
+    font-weight: 600;
+    text-transform: uppercase;
     font-size: 0.75rem;
-    padding: 0.35rem 0.65rem;
+    letter-spacing: 0.05em;
+    border-top: none;
 }
 
-/* --- Modales de exportación --- */
-.modal-header .btn-close-white {
-    filter: brightness(0) invert(1);
+.tp-data-table tbody td {
+    padding: var(--tp-sp-16);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--tp-border-light);
+    color: var(--tp-ink);
 }
 
-.modal-footer .btn {
-    min-width: 120px;
+.tp-data-table tbody tr:last-child td {
+    border-bottom: none;
 }
 
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card.text-white h2 {
-        font-size: 1.5rem;
-    }
-    
-    .card.text-white .fa-3x {
-        font-size: 2rem;
-    }
+.tp-data-table .tp-table-row {
+    transition: background-color var(--tp-trans);
+    border-left: 3px solid transparent;
+}
+
+.tp-data-table .tp-table-row:hover td {
+    background-color: var(--tp-surface-alt);
+}
+
+.tp-data-table .tp-table-row:hover {
+    border-left-color: var(--tp-accent);
+}
+
+/* --- Estado Vacío de la Tabla (Empty State) --- */
+.tp-empty-state {
+    padding: var(--tp-sp-64) var(--tp-sp-24);
+    text-align: center;
+    background-color: var(--tp-surface);
+}
+
+.tp-empty-state i {
+    font-size: 3rem;
+    color: var(--tp-ink-ter);
+    opacity: 0.5;
+    margin-bottom: var(--tp-sp-16);
 }

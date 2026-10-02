@@ -1,0 +1,56 @@
+/* ============================================
+   ESTILOS DE GESTIÓN DE GRUPOS
+   ============================================ */
+
+/* --- Cards de grupos --- */
+.card .card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.card .card-header .btn-light {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    color: #fff;
+    transition: all 0.2s ease;
+}
+
+.card .card-header .btn-light:hover {
+    background: rgba(255, 255, 255, 0.4);
+}
+
+.card .card-header .btn-light i {
+    font-size: 0.8rem;
+}
+
+/* --- Lista de miembros --- */
+.card .list-unstyled li {
+    font-size: 0.9rem;
+    transition: background 0.2s ease;
+}
+
+.card .list-unstyled li:hover {
+    background: #f8f9fa;
+}
+
+.card .list-unstyled .btn-outline-danger {
+    padding: 0.2rem 0.5rem;
+    font-size: 0.7rem;
+}
+
+.card .list-unstyled .btn-outline-danger:hover {
+    background: #dc3545;
+    color: #fff;
+}
+
+/* --- Badges --- */
+.card .badge.bg-secondary {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card .card-body {
+        padding: 1rem;
+    }
+}

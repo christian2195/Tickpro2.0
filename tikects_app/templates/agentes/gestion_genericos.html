@@ -1,212 +1,189 @@
 {% extends 'inicio de sesion/base.html' %}
-
 {% load static %}
 
 {% block title %}Agentes Genéricos{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_genericos.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_genericos.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
 <!-- Encabezado -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-users-cog me-3"></i> AGENTES GENÉRICOS
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
-                    <li class="breadcrumb-item active">Agentes Genéricos</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Asignaciones Genéricas</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                <li class="breadcrumb-item active">Automatización de Colas</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
-    <!-- Mensajes -->
+<div class="container-fluid p-0">
     {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
+        <div class="mb-4">
+            {% for message in messages %}
+                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show tp-alert" role="alert">
+                    <div class="d-flex align-items-center">
+                        <div class="tp-alert-dot bg-{% if message.tags == 'error' %}danger{% else %}success{% endif %}"></div>
+                        <span>{{ message }}</span>
+                    </div>
+                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
     {% endif %}
 
-    <!-- Botón Nueva Asignación -->
-    <div class="mb-4">
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalAgenteGenerico">
-            <i class="fas fa-plus-circle me-2"></i> Nueva Asignación Genérica
+    <div class="mb-4 d-flex justify-content-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalAgenteGenerico">
+            <i class="fas fa-plus me-2"></i> Crear Regla de Asignación
         </button>
     </div>
 
-    <!-- Tabla de asignaciones -->
-    <div class="card shadow">
-        <div class="card-header bg-primary text-white">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Asignaciones Genéricas</h5>
+    <!-- Contenedor Tabla -->
+    <div class="tp-table-container mb-5">
+        <div class="d-flex justify-content-between align-items-center p-4 bg-white border-bottom" style="border-color: var(--tp-border-strong);">
+            <div class="tp-eyebrow m-0">Matriz de Enrutamiento</div>
         </div>
-        <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-hover">
-                    <thead class="table-primary">
-                        <tr>
-                            <th>#</th>
-                            <th>Servicio</th>
-                            <th>Agente Actual</th>
-                            <th>Agente Reasignación</th>
-                            <th>Tiempo Reasignación</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for asignacion in asignaciones %}
-                        <tr>
-                            <td>{{ forloop.counter }}</td>
-                            <td><strong>{{ asignacion.servicio.nombre }}</strong></td>
-                            <td>
-                                <i class="fas fa-user-tie text-primary me-1"></i>
-                                {{ asignacion.agente_actual.usuario.username }}
-                            </td>
-                            <td>
-                                {% if asignacion.agente_reasignacion %}
-                                    <i class="fas fa-user-clock text-warning me-1"></i>
-                                    {{ asignacion.agente_reasignacion.usuario.username }}
-                                {% else %}
-                                    <span class="text-muted">No configurado</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                {% if asignacion.tiempo_reasignacion %}
-                                    <span class="badge bg-info">{{ asignacion.tiempo_reasignacion }} min</span>
-                                {% else %}
-                                    <span class="text-muted">-</span>
-                                {% endif %}
-                            </td>
-                            <td>
-                                <button type="button" class="btn btn-sm btn-danger" 
-                                        data-bs-toggle="modal" 
-                                        data-bs-target="#modalEliminarGenerico"
-                                        data-id="{{ asignacion.id }}"
-                                        data-servicio="{{ asignacion.servicio.nombre }}">
-                                    <i class="fas fa-trash-alt"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-4">
-                                <i class="fas fa-info-circle text-muted fa-2x mb-2"></i>
-                                <p class="text-muted mb-0">No hay asignaciones genéricas configuradas.</p>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        
+        <div class="table-responsive">
+            <table class="table tp-data-table mb-0">
+                <thead>
+                    <tr>
+                        <th style="width: 5%;">#</th>
+                        <th style="width: 25%;">Servicio Afectado</th>
+                        <th style="width: 25%;">Responsable Primario</th>
+                        <th style="width: 25%;">Responsable de Escalamiento</th>
+                        <th style="width: 15%;" class="text-center">SLA Umbral</th>
+                        <th style="width: 5%;" class="text-end">Operación</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for asignacion in asignaciones %}
+                    <tr class="tp-table-row">
+                        <td class="tp-caption fw-bold" style="font-variant-numeric: tabular-nums;">{{ forloop.counter }}</td>
+                        <td class="tp-body fw-bold text-dark">{{ asignacion.servicio.nombre }}</td>
+                        <td class="tp-body">
+                            <i class="fas fa-user-tie text-muted me-1" style="font-size: 0.8rem;"></i>
+                            {{ asignacion.agente_actual.usuario.username }}
+                        </td>
+                        <td class="tp-body">
+                            {% if asignacion.agente_reasignacion %}
+                                <i class="fas fa-user-clock text-muted me-1" style="font-size: 0.8rem;"></i>
+                                {{ asignacion.agente_reasignacion.usuario.username }}
+                            {% else %}
+                                <span class="tp-caption text-muted">No Aplica</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-center">
+                            {% if asignacion.tiempo_reasignacion %}
+                                <span class="tp-badge info px-2 py-1">{{ asignacion.tiempo_reasignacion }} min</span>
+                            {% else %}
+                                <span class="tp-caption text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <button type="button" class="tp-action-btn danger" data-bs-toggle="modal" data-bs-target="#modalEliminarGenerico" data-id="{{ asignacion.id }}" data-servicio="{{ asignacion.servicio.nombre }}" title="Desvincular Regla">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="p-0">
+                            <div class="tp-empty-state">
+                                <i class="fas fa-route"></i>
+                                <h5 class="tp-h3">Rutas Libres</h5>
+                                <p class="tp-body mb-0">No se han configurado disparadores genéricos de asignación.</p>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
-<!-- MODAL: Crear Asignación Genérica -->
-<!-- ======================================== -->
+<!-- MODAL: Crear Asignación -->
 <div class="modal fade" id="modalAgenteGenerico" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-success text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-cog me-2"></i> Nueva Asignación Genérica
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0">Parámetros de Enrutamiento</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <!-- CAMBIADO: action apunta a gestion_genericos -->
             <form method="post" action="{% url 'gestion_genericos' %}" class="needs-validation" novalidate>
                 {% csrf_token %}
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label class="form-label">Servicio <span class="text-danger">*</span></label>
-                        <select class="form-select" name="servicio" required>
-                            <option value="" disabled selected>-- Seleccione un servicio --</option>
+                <div class="modal-body p-4">
+                    <div class="mb-4">
+                        <label class="form-label tp-caption text-uppercase fw-bold">Servicio Detonante <span class="text-danger">*</span></label>
+                        <select class="form-select tp-input" name="servicio" required>
+                            <option value="" disabled selected>-- Indique el servicio a enrutar --</option>
                             {% for servicio in servicios %}
                                 <option value="{{ servicio.id }}">{{ servicio.nombre }}</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Agente Actual <span class="text-danger">*</span></label>
-                        <select class="form-select" name="agente_actual" required>
-                            <option value="" disabled selected>-- Seleccione un agente --</option>
+                    <div class="mb-4">
+                        <label class="form-label tp-caption text-uppercase fw-bold">Agente Primario <span class="text-danger">*</span></label>
+                        <select class="form-select tp-input" name="agente_actual" required>
+                            <option value="" disabled selected>-- Defina el responsable inicial --</option>
                             {% for agente in agentes %}
                                 <option value="{{ agente.id }}">{{ agente.usuario.username }} ({{ agente.nombre }} {{ agente.apellido }})</option>
                             {% endfor %}
                         </select>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Agente de Reasignación</label>
-                        <select class="form-select" name="agente_reasignacion">
-                            <option value="" selected>-- Ninguno (opcional) --</option>
+                    <div class="mb-4">
+                        <label class="form-label tp-caption text-uppercase fw-bold">Agente de Escalamiento</label>
+                        <select class="form-select tp-input" name="agente_reasignacion">
+                            <option value="" selected>-- Sin escalamiento automático --</option>
                             {% for agente in agentes %}
                                 <option value="{{ agente.id }}">{{ agente.usuario.username }} ({{ agente.nombre }} {{ agente.apellido }})</option>
                             {% endfor %}
                         </select>
-                        <small class="text-muted">Agente que tomará el servicio después del tiempo de reasignación</small>
+                        <div class="tp-caption mt-1">Delegación automática al vencer el umbral SLA.</div>
                     </div>
                     <div class="mb-3">
-                        <label class="form-label">Tiempo de Reasignación</label>
-                        <select class="form-select" name="tiempo_reasignacion">
-                            <option value="" selected>-- Sin reasignación automática --</option>
-                            <option value="10">10 minutos</option>
-                            <option value="20">20 minutos</option>
-                            <option value="30">30 minutos</option>
-                            <option value="40">40 minutos</option>
-                            <option value="50">50 minutos</option>
-                            <option value="60">60 minutos</option>
-                            <option value="120">2 horas</option>
-                            <option value="180">3 horas</option>
-                            <option value="240">4 horas</option>
+                        <label class="form-label tp-caption text-uppercase fw-bold">Umbral de Tiempo (SLA)</label>
+                        <select class="form-select tp-input" name="tiempo_reasignacion">
+                            <option value="" selected>-- Apagado --</option>
+                            <option value="10">10 Minutos</option>
+                            <option value="30">30 Minutos</option>
+                            <option value="60">1 Hora</option>
+                            <option value="120">2 Horas</option>
+                            <option value="240">4 Horas</option>
                         </select>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-save me-2"></i> Guardar
-                    </button>
+                <div class="modal-footer border-top-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+                    <button type="submit" class="btn btn-primary">Compilar Regla</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- ======================================== -->
-<!-- MODAL: Eliminar Asignación Genérica -->
-<!-- ======================================== -->
+<!-- MODAL: Eliminar Asignación -->
 <div class="modal fade" id="modalEliminarGenerico" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i> Eliminar Asignación
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0 text-danger">Purgar Regla de Enrutamiento</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>¿Está seguro de eliminar la asignación genérica para el servicio <strong id="eliminarGenericoServicio"></strong>?</p>
-                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+            <div class="modal-body p-4">
+                <p class="tp-body mb-2">¿Aprobar la eliminación de la regla automatizada ligada al servicio <strong id="eliminarGenericoServicio" class="text-dark"></strong>?</p>
+                <p class="tp-caption text-muted mb-0"><i class="fas fa-exclamation-triangle me-1"></i> La delegación volverá a modo manual.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                <!-- CAMBIADO: action apunta a eliminar_asignacion_generica -->
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Conservar Regla</button>
                 <form method="post" id="formEliminarGenerico">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash-alt me-2"></i> Eliminar
-                    </button>
+                    <button type="submit" class="btn btn-danger">Confirmar Purga</button>
                 </form>
             </div>
         </div>

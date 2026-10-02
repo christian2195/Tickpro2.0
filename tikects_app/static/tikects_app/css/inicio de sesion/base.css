@@ -1,224 +1,356 @@
 /* ============================================
-   ESTILOS BASE PARA INICIO DE SESIÓN
+   ESTILOS BASE - REFINADOS
    ============================================ */
 
-/* --- Navbar --- */
-.emvepro-navbar {
-    background: linear-gradient(135deg, #0d47a1 0%, #1565c0 100%);
-    padding: 0.75rem 1rem;
+body {
+    background-color: var(--tp-bg-base) !important;
 }
 
-.navbar-brand span {
-    letter-spacing: 0.5px;
-    font-size: 1.1rem;
+/* --- Navbar (Azul Medio-Oscuro, vivo y con peso) --- */
+.tp-navbar {
+    background-color: var(--tp-navbar-bg);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
+    /* Borde inferior sutil para asentar el bloque */
+    border-bottom: 1px solid rgba(0, 0, 0, 0.15);
 }
+
+.navbar-brand span { color: var(--tp-navbar-text); letter-spacing: -0.02em; }
+.navbar-brand .tp-indicator { background-color: var(--tp-surface); opacity: 0.8; }
 
 .nav-link {
-    color: rgba(255, 255, 255, 0.85) !important;
+    /* Texto blanco con opacidad en reposo */
+    color: rgba(255, 255, 255, 0.75) !important;
     font-weight: 500;
-    padding: 0.5rem 1rem !important;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+    padding: var(--tp-sp-8) var(--tp-sp-16) !important;
+    border-radius: var(--tp-rad-sm);
+    transition: all var(--tp-trans);
 }
 
-.nav-link:hover {
-    color: #ffffff !important;
-    background-color: rgba(255, 255, 255, 0.15);
+.nav-link:hover, .nav-link:focus {
+    color: var(--tp-surface) !important;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
-.nav-link i {
-    width: 20px;
-    text-align: center;
+.tp-profile-btn {
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background-color: transparent;
 }
+.tp-profile-btn:hover { background-color: rgba(255, 255, 255, 0.1); }
 
-/* --- Dropdowns --- */
-.dropdown-menu {
-    border: none;
-    border-radius: 10px;
-    padding: 0.5rem 0;
+/* --- Componentes --- */
+.tp-dropdown {
+    border: 1px solid var(--tp-border-light);
+    border-radius: var(--tp-rad-md);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.03);
+    padding: var(--tp-sp-4);
 }
+.dropdown-item { border-radius: var(--tp-rad-sm); margin-bottom: 2px; }
+.dropdown-item:hover { background-color: var(--tp-bg-base); }
 
-.dropdown-item {
-    padding: 0.6rem 1.2rem;
-    font-size: 0.9rem;
-    transition: all 0.2s ease;
-}
-
-.dropdown-item:hover {
-    background-color: #f0f4ff;
-    color: #0d47a1;
-}
-
-.dropdown-item i {
-    width: 22px;
-    text-align: center;
-}
-
-/* --- Badges --- */
-.badge.bg-light.text-dark.border {
-    border: 1px solid #dee2e6 !important;
-}
-
-/* --- Tooltips --- */
-.tooltip-inner {
-    font-size: 0.75rem;
-    padding: 0.4rem 0.8rem;
-}
-
-/* --- Animaciones --- */
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.animate.fade-in {
-    animation: fadeIn 0.3s ease-out;
-}
-
-/* --- Alerts --- */
-.alert {
-    border-radius: 10px;
-    border: none;
-}
-
-/* --- Cards --- */
-.card {
-    border: none;
-    border-radius: 12px;
-    transition: all 0.3s ease;
-}
-
-.card-header {
-    border-radius: 12px 12px 0 0 !important;
-    font-weight: 600;
-}
-
-/* --- Footer --- */
-footer {
-    font-size: 0.8rem;
-    border-top: 1px solid rgba(255, 255, 255, 0.1);
-}
-
-/* --- Page Header --- */
-.page-header {
-    padding: 1.5rem 0;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.page-header h1 {
-    font-size: 1.75rem;
-    font-weight: 700;
-    color: #0d47a1;
-    margin: 0;
-}
-
-.page-header h1 i {
-    color: #0d47a1;
-}
-
-/* --- Breadcrumb --- */
-.breadcrumb {
-    background: transparent;
-    padding: 0;
-    margin: 0;
-}
-
-.breadcrumb-item a {
-    color: #1565c0;
-    text-decoration: none;
-}
-
-.breadcrumb-item.active {
-    color: #6c757d;
-}
-
-/* --- Botones --- */
+/* Botones Primarios: Azul sólido, sin degradado, hover oscuro */
 .btn {
-    border-radius: 8px;
+    border-radius: var(--tp-rad-md); 
     font-weight: 500;
-    padding: 0.5rem 1.2rem;
-    transition: all 0.3s ease;
+    padding: 0.6rem 1.25rem;
+    box-shadow: none !important;
+    transition: all var(--tp-trans);
+}
+.btn:focus-visible {
+    outline: 2px solid var(--tp-accent);
+    outline-offset: 2px;
+}
+.btn-primary { 
+    background-color: var(--tp-accent); 
+    color: #ffffff; 
+    border: 1px solid var(--tp-accent); 
+}
+.btn-primary:hover { 
+    background-color: var(--tp-accent-hover); 
+    border-color: var(--tp-accent-hover);
+    transform: translateY(-1px);
 }
 
-.btn-success {
-    background: linear-gradient(135deg, #2e7d32, #388e3c);
-    border: none;
+/* Icono Navbar (Campana) adaptado a fondo oscuro */
+.tp-icon-container {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    border-radius: var(--tp-rad-md);
+    background-color: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: var(--tp-surface);
 }
 
-.btn-primary {
-    background: linear-gradient(135deg, #0d47a1, #1565c0);
-    border: none;
+/* Badges con texto saturado para contraste óptimo */
+.tp-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 0.25rem 0.6rem;
+    border-radius: var(--tp-rad-md);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+}
+.tp-badge::before {
+    content: '';
+    display: block;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+}
+.tp-badge.success { background-color: var(--tp-success-bg); color: var(--tp-success-text); border: 1px solid var(--tp-success-border); }
+.tp-badge.success::before { background-color: var(--tp-success-dot); }
+
+.tp-badge.warning { background-color: var(--tp-warning-bg); color: var(--tp-warning-text); border: 1px solid var(--tp-warning-border); }
+.tp-badge.warning::before { background-color: var(--tp-warning-dot); }
+
+.tp-badge.danger { background-color: var(--tp-danger-bg); color: var(--tp-danger-text); border: 1px solid var(--tp-danger-border); }
+.tp-badge.danger::before { background-color: var(--tp-danger-dot); }
+
+/* Tablas */
+.table { background-color: transparent; }
+.table thead th {
+    font-weight: 500;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.05em;
+    color: var(--tp-ink-sec);
+    border-bottom: 1px solid var(--tp-border-dark);
+    padding: var(--tp-sp-16) var(--tp-sp-8);
+}
+.table tbody td {
+    padding: var(--tp-sp-24) var(--tp-sp-8);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--tp-border-light);
+    color: var(--tp-ink);
 }
 
-.btn-danger {
-    background: linear-gradient(135deg, #b71c1c, #c62828);
-    border: none;
+/* Alertas */
+.tp-alert {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-light);
+    border-radius: var(--tp-rad-md);
+    color: var(--tp-ink);
+    padding: var(--tp-sp-16);
+}
+.tp-alert-dot { width: 8px; height: 8px; border-radius: 50%; margin-right: var(--tp-sp-12); }
+
+/* ============================================
+   ESTILOS ESTRUCTURALES Y COMPONENTES BASE
+   ============================================ */
+
+/* --- Page Header y Breadcrumb --- */
+.tp-page-header {
+    padding-bottom: var(--tp-sp-16);
+    margin-bottom: var(--tp-sp-32);
+    /* Decisión: Borde inferior fuerte para separar el header del contenido global */
+    border-bottom: 2px solid var(--tp-border-strong);
+}
+.breadcrumb { margin-bottom: 0; }
+.breadcrumb-item a { color: var(--tp-ink-sec); text-decoration: none; }
+.breadcrumb-item a:hover { color: var(--tp-accent); text-decoration: underline; }
+
+/* --- Cards Generales --- */
+.card {
+    background-color: var(--tp-surface);
+    /* Decisión: Borde fuerte visible, cero sombras */
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    box-shadow: none !important;
+}
+.card-header {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
 }
 
-.btn-warning {
-    background: linear-gradient(135deg, #f57f17, #f9a825);
-    border: none;
-    color: #fff;
+/* --- Contenedor de Tabla de Datos --- */
+/* Decisión: Envolver la tabla en un contenedor sólido con radio y borde fuerte */
+.tp-table-container {
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-sm);
+    overflow: hidden;
+    background-color: var(--tp-surface);
 }
 
-.btn-info {
-    background: linear-gradient(135deg, #00695c, #00897b);
-    border: none;
-    color: #fff;
-}
-
-.btn-secondary {
-    background: linear-gradient(135deg, #424242, #616161);
-    border: none;
-}
-
-.btn-outline-primary {
-    border-color: #1565c0;
-    color: #1565c0;
-}
-
-.btn-outline-primary:hover {
-    background: #1565c0;
-    color: #fff;
-}
-
-/* --- Tablas --- */
-.table {
-    font-size: 0.9rem;
-}
-
+.table { margin-bottom: 0; background-color: transparent; }
 .table thead th {
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.75rem;
-    letter-spacing: 0.5px;
-    border-bottom: 2px solid #dee2e6;
+    letter-spacing: 0.05em;
+    color: var(--tp-ink-sec);
+    /* Decisión: Fondo distinto para la cabecera + borde inferior grueso */
+    background-color: var(--tp-surface-alt);
+    border-bottom: 2px solid var(--tp-border-strong) !important;
+    padding: 16px var(--tp-sp-16);
+}
+.table tbody td {
+    /* Decisión: Más aire (15px) y borde hairline visible */
+    padding: 15px var(--tp-sp-16);
+    vertical-align: middle;
+    border-bottom: 1px solid var(--tp-border);
+    color: var(--tp-ink);
+}
+.table tbody tr:last-child td {
+    border-bottom: none; /* Limpieza en la última fila */
 }
 
-.table-hover tbody tr:hover {
-    background-color: #f5f8ff;
+/* --- Separadores de Sección --- */
+.tp-section-divider {
+    border-top: 1px solid var(--tp-border-strong);
+    margin: var(--tp-sp-48) 0;
 }
 
-/* --- Paginación --- */
-.pagination .page-link {
-    border: none;
-    border-radius: 8px;
-    margin: 0 2px;
-    color: #0d47a1;
-    padding: 0.5rem 0.9rem;
+/* ============================================
+   SISTEMA DE BOTONES (TÁCTIL Y EDITORIAL)
+   ============================================ */
+
+/* --- Botón Base --- */
+.btn {
+    border-radius: var(--tp-rad-md);
+    font-weight: 500;
+    padding: 0.55rem 1.25rem;
+    letter-spacing: 0.01em;
+    transition: all var(--tp-trans);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px; /* Margen automático para iconos */
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06); /* Sombra base sutil */
 }
 
-.pagination .page-item.active .page-link {
-    background: linear-gradient(135deg, #0d47a1, #1565c0);
-    color: #fff;
+/* Anulación de transformaciones genéricas antiguas */
+.btn:hover, .btn:active { transform: none !important; }
+
+.btn:focus-visible {
+    outline: 2px solid var(--tp-accent);
+    outline-offset: 2px;
+    box-shadow: none;
 }
 
-.pagination .page-link:hover {
-    background-color: #e3edfb;
+.btn:disabled, .btn.disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    pointer-events: none;
+    box-shadow: none !important;
 }
 
-/* --- Tooltips en tablas --- */
-[data-bs-toggle="tooltip"] {
-    cursor: help;
+/* --- Botón Primario --- */
+.btn-primary {
+    background-color: var(--tp-accent);
+    color: #ffffff;
+    border: 1px solid var(--tp-accent);
+    /* Volumen: Sombra base + highlight blanco interno superior */
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+.btn-primary:hover {
+    background-color: var(--tp-accent-hover);
+    border-color: var(--tp-accent-hover);
+    color: #ffffff;
+    box-shadow: 0 4px 12px rgba(29, 78, 216, 0.25), 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+.btn-primary:active {
+    background-color: var(--tp-accent-active);
+    border-color: var(--tp-accent-active);
+    /* Sensación de presión */
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important;
+}
+
+/* --- Botón Secundario (Outline) --- */
+.btn-outline-primary {
+    background-color: transparent;
+    color: var(--tp-accent);
+    border: 1px solid var(--tp-accent);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important;
+}
+.btn-outline-primary:hover {
+    background-color: var(--tp-accent-soft);
+    color: var(--tp-accent-hover);
+    border-color: var(--tp-accent-hover);
+    box-shadow: 0 2px 6px rgba(29, 78, 216, 0.12) !important;
+}
+.btn-outline-primary:active {
+    background-color: #BFDBFE;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.08) !important;
+}
+
+/* --- Colores Semánticos (Success, Danger, Warning) --- */
+.btn-success { background-color: var(--tp-success-dot); border-color: var(--tp-success-dot); color: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important; }
+.btn-success:hover { background-color: var(--tp-success-hover); border-color: var(--tp-success-hover); color: #fff; box-shadow: 0 4px 12px rgba(22, 163, 74, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important; }
+.btn-success:active { background-color: var(--tp-success-active); border-color: var(--tp-success-active); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important; }
+
+.btn-danger { background-color: var(--tp-danger-dot); border-color: var(--tp-danger-dot); color: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important; }
+.btn-danger:hover { background-color: var(--tp-danger-hover); border-color: var(--tp-danger-hover); color: #fff; box-shadow: 0 4px 12px rgba(220, 38, 38, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important; }
+.btn-danger:active { background-color: var(--tp-danger-active); border-color: var(--tp-danger-active); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important; }
+
+.btn-warning { background-color: var(--tp-warning-dot); border-color: var(--tp-warning-dot); color: #fff; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important; }
+.btn-warning:hover { background-color: var(--tp-warning-hover); border-color: var(--tp-warning-hover); color: #fff; box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important; }
+.btn-warning:active { background-color: var(--tp-warning-active); border-color: var(--tp-warning-active); box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15) !important; }
+
+/* Botón Neutro (Secundario/Cancelar) */
+.btn-secondary { background-color: var(--tp-surface-alt); border-color: var(--tp-border-strong); color: var(--tp-ink); box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04) !important; }
+.btn-secondary:hover { background-color: var(--tp-border); border-color: var(--tp-border-strong); color: var(--tp-ink); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.08) !important; }
+.btn-secondary:active { background-color: var(--tp-border-strong); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1) !important; }
+
+/* --- Botones de Acción Compactos (.tp-action-btn) --- */
+.tp-action-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 34px;
+    height: 34px;
+    border-radius: var(--tp-rad-sm);
+    border: 1px solid var(--tp-border-strong);
+    background-color: var(--tp-surface);
+    color: var(--tp-ink-sec);
+    transition: all var(--tp-trans);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+    text-decoration: none;
+    padding: 0;
+}
+.tp-action-btn i { margin: 0; }
+
+/* Variantes tp-action-btn (Hover Sólido) */
+.tp-action-btn:hover { background-color: var(--tp-ink-sec); color: #fff; border-color: var(--tp-ink-sec); box-shadow: 0 2px 6px rgba(15, 23, 42, 0.15); transform: none; }
+.tp-action-btn:active { background-color: var(--tp-ink); border-color: var(--tp-ink); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important; }
+
+.tp-action-btn.primary, .tp-action-btn.info { border-color: var(--tp-accent); color: var(--tp-accent); }
+.tp-action-btn.primary:hover, .tp-action-btn.info:hover { background-color: var(--tp-accent); border-color: var(--tp-accent); color: #fff; box-shadow: 0 2px 6px rgba(29, 78, 216, 0.25); }
+.tp-action-btn.primary:active, .tp-action-btn.info:active { background-color: var(--tp-accent-active); border-color: var(--tp-accent-active); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important; }
+
+.tp-action-btn.success { border-color: var(--tp-success-dot); color: var(--tp-success-dot); }
+.tp-action-btn.success:hover { background-color: var(--tp-success-dot); border-color: var(--tp-success-dot); color: #fff; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.25); }
+.tp-action-btn.success:active { background-color: var(--tp-success-active); border-color: var(--tp-success-active); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important; }
+
+.tp-action-btn.warning { border-color: var(--tp-warning-dot); color: var(--tp-warning-dot); }
+.tp-action-btn.warning:hover { background-color: var(--tp-warning-dot); border-color: var(--tp-warning-dot); color: #fff; box-shadow: 0 2px 6px rgba(217, 119, 6, 0.25); }
+.tp-action-btn.warning:active { background-color: var(--tp-warning-active); border-color: var(--tp-warning-active); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important; }
+
+.tp-action-btn.danger { border-color: var(--tp-danger-dot); color: var(--tp-danger-dot); }
+.tp-action-btn.danger:hover { background-color: var(--tp-danger-dot); border-color: var(--tp-danger-dot); color: #fff; box-shadow: 0 2px 6px rgba(220, 38, 38, 0.25); }
+.tp-action-btn.danger:active { background-color: var(--tp-danger-active); border-color: var(--tp-danger-active); box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2) !important; }
+
+/* --- Footer de Modales --- */
+.modal-footer {
+    gap: 12px;
+    border-top: 1px solid var(--tp-border-light) !important;
+    padding: var(--tp-sp-16) var(--tp-sp-24);
+}
+.modal-footer .btn {
+    margin: 0;
+    padding: 0.65rem 1.5rem; /* Padding horizontal generoso */
+}
+
+/* --- Botones Grandes (CTA) --- */
+.btn-lg, .tp-btn-cta {
+    padding: 0.75rem 1.75rem;
+    font-size: 1.05rem;
+    box-shadow: 0 2px 4px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
+}
+.btn-lg:hover, .tp-btn-cta:hover {
+    box-shadow: 0 6px 16px rgba(29, 78, 216, 0.3), 0 2px 4px rgba(15, 23, 42, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.15) !important;
 }

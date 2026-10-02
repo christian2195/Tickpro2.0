@@ -21,7 +21,8 @@ document.addEventListener('DOMContentLoaded', function() {
             if (mode === 'crear') {
                 if (actionSpan) actionSpan.textContent = 'Nuevo';
                 document.getElementById('servicio_id').value = '';
-                form.action = '/gestion/servicios/';
+                // CORRECCIÓN: Apunta a la ruta de creación
+                form.action = '/gestion/servicios/crear/'; 
             } else if (mode === 'editar') {
                 if (actionSpan) actionSpan.textContent = 'Editar';
                 var id = button.getAttribute('data-id');

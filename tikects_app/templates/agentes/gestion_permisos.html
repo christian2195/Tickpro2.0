@@ -1,151 +1,145 @@
 {% extends 'inicio de sesion/base.html' %}
-
 {% load static %}
 
 {% block title %}Gestión de Permisos{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_permisos.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/agentes/gestion_permisos.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
-<!-- Encabezado -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-key me-3"></i> GESTIÓN DE PERMISOS
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
-                    <li class="breadcrumb-item active">Permisos</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Matriz de Acceso</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                <li class="breadcrumb-item active">Auditoría de Roles</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
-    <div class="alert alert-info">
-        <i class="fas fa-info-circle me-2"></i>
-        Administra los permisos de los usuarios en los diferentes grupos del sistema.
+<div class="container-fluid p-0">
+    <div class="tp-alert mb-5 d-flex align-items-center p-3" style="background-color: var(--tp-info-bg); border-color: var(--tp-info-border);">
+        <i class="fas fa-shield-alt me-3 text-dark" style="font-size: 1.2rem;"></i>
+        <span class="tp-body text-dark m-0 fw-medium">Control visual de jerarquías para protección de la integridad del flujo técnico.</span>
     </div>
 
-    <div class="row">
+    <div class="row g-4 mb-5">
         <!-- Panel de Agentes -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-user-tie me-2"></i> Agentes del Sistema</h5>
+        <div class="col-lg-6">
+            <div class="tp-permissions-card">
+                <div class="tp-card-header d-flex align-items-center gap-2">
+                    <div class="tp-indicator" style="background-color: var(--tp-accent);"></div>
+                    <div class="tp-eyebrow mb-0 border-0">Nómina Activa</div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-primary">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Usuario</th>
-                                    <th>Nombre</th>
-                                    <th>Permiso</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for agente in agentes %}
-                                <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td><strong>{{ agente.usuario.username }}</strong></td>
-                                    <td>{{ agente.nombre }} {{ agente.apellido }}</td>
-                                    <td>
-                                        {% if agente.usuario.is_superuser %}
-                                            <span class="badge bg-danger" data-bs-toggle="tooltip" title="Acceso total al sistema">
-                                                <i class="fas fa-crown me-1"></i> Superusuario
-                                            </span>
-                                        {% elif agente.usuario.is_staff %}
-                                            <span class="badge bg-warning text-dark" data-bs-toggle="tooltip" title="Acceso al panel de administración">
-                                                <i class="fas fa-tools me-1"></i> Staff
-                                            </span>
-                                        {% else %}
-                                            <span class="badge bg-info" data-bs-toggle="tooltip" title="Permisos básicos de agente">
-                                                <i class="fas fa-user me-1"></i> Agente
-                                            </span>
-                                        {% endif %}
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="4" class="text-center py-3">No hay agentes registrados</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                
+                <div class="table-responsive flex-grow-1">
+                    <table class="table tp-data-table mb-0 border-0">
+                        <thead>
+                            <tr>
+                                <th style="border-radius: 0; width: 5%;">#</th>
+                                <th style="width: 25%;">Identificador</th>
+                                <th style="width: 40%;">Títular</th>
+                                <th style="width: 30%;">Nivel de Credencial</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for agente in agentes %}
+                            <tr class="tp-table-row">
+                                <td class="tp-caption fw-bold" style="font-variant-numeric: tabular-nums;">{{ forloop.counter }}</td>
+                                <td class="tp-body text-dark fw-medium">{{ agente.usuario.username }}</td>
+                                <td class="tp-caption">{{ agente.nombre }} {{ agente.apellido }}</td>
+                                <td>
+                                    {% if agente.usuario.is_superuser %}
+                                        <span class="tp-badge danger"><i class="fas fa-crown opacity-50"></i> ROOT</span>
+                                    {% elif agente.usuario.is_staff %}
+                                        <span class="tp-badge warning"><i class="fas fa-cog opacity-50"></i> STAFF</span>
+                                    {% else %}
+                                        <span class="tp-badge info"><i class="fas fa-user opacity-50"></i> ESTÁNDAR</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 tp-caption">Bóveda sin registros</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-footer bg-light text-muted">
-                    <small>Total: {{ agentes|length }} agente(s)</small>
+                <div class="tp-card-footer d-flex justify-content-between align-items-center">
+                    <span class="tp-caption fw-bold">Sumatoria Individual</span>
+                    <span class="tp-badge" style="border-color: var(--tp-border-strong);">{{ agentes|length }} Credenciales</span>
                 </div>
             </div>
         </div>
 
         <!-- Panel de Grupos -->
-        <div class="col-lg-6 mb-4">
-            <div class="card h-100 shadow-sm">
-                <div class="card-header bg-success text-white">
-                    <h5 class="mb-0"><i class="fas fa-users me-2"></i> Grupos de Agentes</h5>
+        <div class="col-lg-6">
+            <div class="tp-permissions-card">
+                <div class="tp-card-header d-flex align-items-center gap-2">
+                    <div class="tp-indicator" style="background-color: var(--tp-success-dot);"></div>
+                    <div class="tp-eyebrow mb-0 border-0">Roles Colectivos</div>
                 </div>
-                <div class="card-body p-0">
-                    <div class="table-responsive">
-                        <table class="table table-hover mb-0">
-                            <thead class="table-success">
-                                <tr>
-                                    <th>#</th>
-                                    <th>Grupo</th>
-                                    <th>Descripción</th>
-                                    <th>Miembros</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {% for grupo in grupos %}
-                                <tr>
-                                    <td>{{ forloop.counter }}</td>
-                                    <td><strong>{{ grupo.nombre }}</strong></td>
-                                    <td>{{ grupo.descripcion|truncatechars:40 }}</td>
-                                    <td>
-                                        <span class="badge bg-secondary" data-bs-toggle="tooltip" title="Agentes en este grupo">
-                                            <i class="fas fa-users me-1"></i> {{ grupo.agentes_por_grupos_set.count }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                {% empty %}
-                                <tr><td colspan="4" class="text-center py-3">No hay grupos creados</td></tr>
-                                {% endfor %}
-                            </tbody>
-                        </table>
-                    </div>
+                
+                <div class="table-responsive flex-grow-1">
+                    <table class="table tp-data-table mb-0 border-0">
+                        <thead>
+                            <tr>
+                                <th style="border-radius: 0; width: 5%;">#</th>
+                                <th style="width: 35%;">Delegación</th>
+                                <th style="width: 40%;">Perfil Técnico</th>
+                                <th style="width: 20%;" class="text-center">Integrantes</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for grupo in grupos %}
+                            <tr class="tp-table-row">
+                                <td class="tp-caption fw-bold" style="font-variant-numeric: tabular-nums;">{{ forloop.counter }}</td>
+                                <td class="tp-body text-dark fw-medium">{{ grupo.nombre }}</td>
+                                <td class="tp-caption">{{ grupo.descripcion|truncatechars:35 }}</td>
+                                <td class="text-center">
+                                    <span class="tp-badge info px-2 py-1">{{ grupo.agentes_por_grupos_set.count }}</span>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="4" class="text-center py-4 tp-caption">Cuadrillas no inicializadas</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
                 </div>
-                <div class="card-footer bg-light text-muted">
-                    <small>Total: {{ grupos|length }} grupo(s)</small>
+                <div class="tp-card-footer d-flex justify-content-between align-items-center">
+                    <span class="tp-caption fw-bold">Segmentación</span>
+                    <span class="tp-badge" style="border-color: var(--tp-border-strong);">{{ grupos|length }} Cuadrillas</span>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Leyenda de Permisos -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-secondary text-white">
-            <h5 class="mb-0"><i class="fas fa-info-circle me-2"></i> Leyenda de Permisos</h5>
+    <!-- Leyenda Tipográfica -->
+    <div class="tp-legend-card mb-5">
+        <div class="tp-card-header">
+            <div class="tp-eyebrow mb-0">Nomenclatura Estructural</div>
         </div>
-        <div class="card-body">
-            <div class="row">
-                <div class="col-md-4 mb-2">
-                    <span class="badge bg-danger">Superusuario</span>
-                    <span class="text-muted small">- Acceso total a todas las funcionalidades</span>
+        <div class="card-body p-4">
+            <div class="row g-4">
+                <div class="col-md-4">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-inline-flex"><span class="tp-badge danger"><i class="fas fa-crown opacity-50"></i> ROOT (Superusuario)</span></div>
+                        <span class="tp-caption">Máximo privilegio jerárquico. Modificación global de flujos, purga de matrices y acceso al framework interno.</span>
+                    </div>
                 </div>
-                <div class="col-md-4 mb-2">
-                    <span class="badge bg-warning text-dark">Staff</span>
-                    <span class="text-muted small">- Acceso al panel de administración Django</span>
+                <div class="col-md-4">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-inline-flex"><span class="tp-badge warning"><i class="fas fa-cog opacity-50"></i> STAFF (Administrador)</span></div>
+                        <span class="tp-caption">Perfil gestor para configuración técnica de agentes, colas, reglas y taxonomía sin manipulación de la DB cruda.</span>
+                    </div>
                 </div>
-                <div class="col-md-4 mb-2">
-                    <span class="badge bg-info">Agente</span>
-                    <span class="text-muted small">- Permisos básicos para gestión de tickets</span>
+                <div class="col-md-4">
+                    <div class="d-flex flex-column gap-2">
+                        <div class="d-inline-flex"><span class="tp-badge info"><i class="fas fa-user opacity-50"></i> ESTÁNDAR (Analista)</span></div>
+                        <span class="tp-caption">Operatividad limitada a ciclo de vida de tickets (diagnóstico, derivación, cierre) bajo escrutinio de auditoría.</span>
+                    </div>
                 </div>
             </div>
         </div>

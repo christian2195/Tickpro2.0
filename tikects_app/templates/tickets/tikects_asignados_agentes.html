@@ -3,236 +3,167 @@
 {% block title %}Mis Tickets Asignados{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_asignados_agentes.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_asignados_agentes.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-ticket-alt me-3"></i> MIS TICKETS ASIGNADOS
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
-                    <li class="breadcrumb-item active">Mis Tickets</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Bandeja de Operador</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
+                <li class="breadcrumb-item active">Mis Tickets Asignados</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="btn-group w-100" role="group">
-                <a href="{% url 'ver_tikects_asignados_agentes' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_asignados_agentes' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                    <i class="fas fa-list me-2"></i> Todos
-                </a>
-                <a href="{% url 'ver_tikects_asignados_agentes_abiertos' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_asignados_agentes_abiertos' %}btn-success{% else %}btn-outline-success{% endif %}">
-                    <i class="fas fa-folder-open me-2"></i> Abiertos
-                </a>
-                <a href="{% url 'ver_tikects_asignados_agentes_cerrados' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_asignados_agentes_cerrados' %}btn-danger{% else %}btn-outline-danger{% endif %}">
-                    <i class="fas fa-check-circle me-2"></i> Cerrados
-                </a>
+<div class="container-fluid p-0">
+    <div class="tp-filter-group mb-5">
+        <a href="{% url 'ver_tikects_asignados_agentes' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_asignados_agentes' %}active{% endif %}">Todos los casos</a>
+        <a href="{% url 'ver_tikects_asignados_agentes_abiertos' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_asignados_agentes_abiertos' %}active{% endif %}">Pendientes de Acción</a>
+        <a href="{% url 'ver_tikects_asignados_agentes_cerrados' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_asignados_agentes_cerrados' %}active{% endif %}">Histórico Cerrados</a>
+    </div>
+
+    <!-- Estadísticas rápidas -->
+    <div class="row g-4 mb-5 pb-2">
+        <div class="col-md-4">
+            <div class="tp-stat-block tp-border-accent">
+                <span class="tp-stat-label">Carga Total Asignada</span>
+                <span class="tp-stat-value">{{ tikects.paginator.count }}</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="tp-stat-block tp-border-warning">
+                <span class="tp-stat-label text-warning" style="color: #D97706 !important;">En Proceso</span>
+                <span class="tp-stat-value">{{ tikects_abiertos|default:"0" }}</span>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="tp-stat-block tp-border-success">
+                <span class="tp-stat-label text-success">Resueltos</span>
+                <span class="tp-stat-value">{{ tikects_cerrados|default:"0" }}</span>
             </div>
         </div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-md-4">
-            <div class="card text-white bg-primary shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-white-50">Total Asignados</h6>
-                    <h3 class="mb-0 fw-bold">{{ tikects.paginator.count }}</h3>
-                </div>
-            </div>
+    <div class="tp-table-container mb-4">
+        <div class="d-flex justify-content-between align-items-center p-4 bg-white border-bottom" style="border-color: var(--tp-border-strong);">
+            <div class="tp-eyebrow m-0">Casos Asignados</div>
+            <span class="tp-caption">Mostrando {{ tikects.paginator.count }} registros</span>
         </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-success shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-white-50">Abiertos</h6>
-                    <h3 class="mb-0 fw-bold">{{ tikects_abiertos|default:"0" }}</h3>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-4">
-            <div class="card text-white bg-danger shadow-sm">
-                <div class="card-body">
-                    <h6 class="card-title text-white-50">Cerrados</h6>
-                    <h3 class="mb-0 fw-bold">{{ tikects_cerrados|default:"0" }}</h3>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <div class="card shadow-sm mb-5">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Tickets</h5>
-            <span class="badge bg-light text-dark fw-bold">Total: {{ tikects.paginator.count }}</span>
-        </div>
-        <div class="card-body">
-            {% if tikects %}
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle">
-                        <thead class="table-light">
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Título</th>
-                                <th>Cliente</th>
-                                <th>Servicio</th>
-                                <th>Estado</th>
-                                <th>Reasignado</th>
-                                <th class="text-center">Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tikect in tikects %}
-                            <tr>
-                                <td><strong>#{{ tikect.id }}</strong></td>
-                                <td>
-                                    <small class="fw-bold text-dark">{{ tikect.fecha_creacion|date:"d/m/Y" }}</small>
-                                    <br>
-                                    <small class="text-muted">{{ tikect.fecha_creacion|date:"h:i A" }}</small>
-                                </td>
-                                <td>
-                                    <a href="{% url 'detalle_tikect' tikect.id %}" class="text-decoration-none fw-bold text-primary">
-                                        {{ tikect.titulo|truncatechars:40 }}
+        
+        {% if tikects %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 10%;">Apertura</th>
+                            <th style="width: 30%;">Asunto Técnico</th>
+                            <th style="width: 15%;">Usuario</th>
+                            <th style="width: 15%;">Servicio</th>
+                            <th style="width: 10%;">Estado</th>
+                            <th style="width: 5%;" class="text-center">Deleg.</th>
+                            <th style="width: 10%;" class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tikect in tikects %}
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <!-- Botón Ver Detalles -->
+                                <a href="{% url 'detalle_tikect' tikect.id %}" class="tp-action-btn btn-detalle-modal" data-id="{{ tikect.id }}" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                
+                                {% if tikect.estado != 'cerrado' %}
+                                    <!-- Botón Reasignar -->
+                                    <a href="{% url 'reasignar_tikect' tikect.id %}" class="tp-action-btn warning btn-reasignar-modal" data-id="{{ tikect.id }}" title="Reasignar caso">
+                                        <i class="fas fa-exchange-alt"></i>
                                     </a>
-                                </td>
-                                <td><span class="text-secondary"><i class="fas fa-user me-1 small"></i>{{ tikect.usuario.username }}</span></td>
-                                <td><span class="badge bg-light text-dark border">{{ tikect.servicio.nombre }}</span></td>
-                                <td>
-                                    {% if tikect.estado == 'cerrado' %}
-                                        <span class="badge bg-danger">Cerrado</span>
-                                    {% else %}
-                                        <span class="badge bg-success">Abierto</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if tikect.id in reasignados_ids %}
-                                        <span class="badge bg-info text-dark" data-bs-toggle="tooltip" title="Reasignado">
-                                            <i class="fas fa-exchange-alt me-1"></i> Sí
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">No</span>
-                                    {% endif %}
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group btn-group-sm" role="group">
-                                        <a href="{% url 'detalle_tikect' tikect.id %}" class="btn btn-outline-primary" data-bs-toggle="tooltip" title="Ver detalles">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        {% if tikect.estado != 'cerrado' %}
-                                            <a href="{% url 'reasignar_tikect' tikect.id %}" class="btn btn-outline-warning" data-bs-toggle="tooltip" title="Reasignar ticket">
-                                                <i class="fas fa-exchange-alt"></i>
-                                            </a>
-                                            <span class="d-inline-block" data-bs-toggle="tooltip" title="Cerrar Ticket">
-                                                <button type="button" class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#cerrarModal{{ tikect.id }}">
-                                                    <i class="fas fa-check-circle"></i>
-                                                </button>
-                                            </span>
-                                        {% endif %}
-                                    </div>
-                                </td>
-                            </tr>
+                                    
+                                    <!-- Botón Cerrar Ticket -->
+                                    <button type="button" class="tp-action-btn success" data-bs-toggle="modal" data-bs-target="#cerrarModal{{ tikect.id }}" title="Cerrar Ticket">
+                                        <i class="fas fa-check"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </td>
 
-                            {% if tikect.estado != 'cerrado' %}
-                            <div class="modal fade" id="cerrarModal{{ tikect.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-danger text-white">
-                                            <h5 class="modal-title">
-                                                <i class="fas fa-check-circle me-2"></i> Cerrar Ticket #{{ tikect.id }}
-                                            </h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
-                                        </div>
-                                        <form method="post" action="{% url 'cerrar_tikect' tikect.id %}">
-                                            {% csrf_token %}
-                                            <div class="modal-body text-start">
-                                                <p>¿Está seguro de que desea proceder al cierre definitivo del ticket <strong>"{{ tikect.titulo }}"</strong>?</p>
-                                                <div class="mb-3">
-                                                    <label for="solucion{{ tikect.id }}" class="form-label fw-bold">Solución o soporte aplicado (Obligatorio):</label>
-                                                    <textarea class="form-control" id="solucion{{ tikect.id }}" name="descripcion_solucion" rows="4" placeholder="Escriba detalladamente la solución técnica brindada al usuario..." required></textarea>
-                                                </div>
-                                            </div>
-                                            <div class="modal-footer">
-                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                                                <button type="submit" class="btn btn-danger">
-                                                    <i class="fas fa-check me-1"></i> Confirmar Cierre
-                                                </button>
-                                            </div>
-                                        </form>
+                        <!-- Modal Operativo de Cierre -->
+                        {% if tikect.estado != 'cerrado' %}
+                        <div class="modal fade" id="cerrarModal{{ tikect.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+                                    <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="modal-title tp-h3 m-0">Resolución de Ticket #{{ tikect.id }}</h5>
+                                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                                     </div>
+                                    <form method="post" action="{% url 'cerrar_tikect' tikect.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body p-4 text-start">
+                                            <div class="mb-3">
+                                                <label for="solucion{{ tikect.id }}" class="form-label tp-caption text-uppercase fw-bold">Memoria Técnica del Cierre <span class="text-danger">*</span></label>
+                                                <textarea class="form-control" style="border: 1px solid var(--tp-border-strong); border-radius: var(--tp-rad-md);" id="solucion{{ tikect.id }}" name="descripcion_solucion" rows="4" placeholder="Documente la acción definitiva tomada para el archivo técnico..." required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 px-4 pb-4">
+                                            <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+                                            <button type="submit" class="btn btn-primary">Procesar Cierre</button>
+                                        </div>
+                                    </form>
                                 </div>
                             </div>
-                            {% endif %}
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                {% if tikects.paginator.num_pages > 1 %}
-                <nav class="mt-4" aria-label="Navegación de páginas">
-                    <ul class="pagination justify-content-center flex-wrap shadow-sm">
-                        
-                        {% if tikects.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page=1" data-bs-toggle="tooltip" title="Primera página"><i class="fas fa-angle-double-left"></i></a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ tikects.previous_page_number }}"><i class="fas fa-chevron-left"></i></a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-left"></i></span></li>
+                        </div>
                         {% endif %}
-
-                        {% for i in tikects.paginator.page_range %}
-                            {# Restringimos visualmente para mostrar extremos y un radio de 2 respecto a la página actual #}
-                            {% if i == 1 or i == tikects.paginator.num_pages or i >= tikects.number|add:"-2" and i <= tikects.number|add:"2" %}
-                                {% if tikects.number == i %}
-                                    <li class="page-item active" aria-current="page">
-                                        <span class="page-link fw-bold">{{ i }}</span>
-                                    </li>
-                                {% else %}
-                                    <li class="page-item">
-                                        <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-                                    </li>
-                                {% endif %}
-                            
-                            {# Elipsis izquierda si la brecha es ancha #}
-                            {% elif i == 2 and tikects.number > 4 %}
-                                <li class="page-item disabled"><span class="page-link">...</span></li>
-                            
-                            {# Elipsis derecha si queda mucho recorrido por delante #}
-                            {% elif i == tikects.paginator.num_pages|add:"-1" and tikects.number < tikects.paginator.num_pages|add:"-3" %}
-                                <li class="page-item disabled"><span class="page-link">...</span></li>
-                            {% endif %}
                         {% endfor %}
+                    </tbody>
+                </table>
+            </div>
 
-                        {% if tikects.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ tikects.next_page_number }}"><i class="fas fa-chevron-right"></i></a>
-                            </li>
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ tikects.paginator.num_pages }}" data-bs-toggle="tooltip" title="Última página (#{{ tikects.paginator.num_pages }})"><i class="fas fa-angle-double-right"></i></a>
-                            </li>
-                        {% else %}
-                            <li class="page-item disabled"><span class="page-link"><i class="fas fa-chevron-right"></i></span></li>
+            {% if tikects.paginator.num_pages > 1 %}
+            <nav class="mt-4 pb-4">
+                <ul class="pagination justify-content-center tp-pagination">
+                    {% if tikects.has_previous %}
+                        <li class="page-item"><a class="page-link shadow-none" href="?page={{ tikects.previous_page_number }}"><i class="fas fa-chevron-left"></i></a></li>
+                    {% endif %}
+
+                    {% for i in tikects.paginator.page_range %}
+                        {% if tikects.number == i %}
+                            <li class="page-item active"><span class="page-link shadow-none">{{ i }}</span></li>
+                        {% elif i > tikects.number|add:'-3' and i < tikects.number|add:'3' %}
+                            <li class="page-item"><a class="page-link shadow-none" href="?page={{ i }}">{{ i }}</a></li>
                         {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
+                    {% endfor %}
 
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted fw-bold">No tienes tickets asignados en esta bandeja</h5>
-                    <p class="text-muted mb-0">Cuando la mesa de triaje te delegue casos, los verás listados aquí.</p>
-                </div>
+                    {% if tikects.has_next %}
+                        <li class="page-item"><a class="page-link shadow-none" href="?page={{ tikects.next_page_number }}"><i class="fas fa-chevron-right"></i></a></li>
+                    {% endif %}
+                </ul>
+            </nav>
             {% endif %}
+
+        {% else %}
+            <div class="text-center py-5 bg-white">
+                <i class="fas fa-inbox fa-3x text-muted mb-3 opacity-50"></i>
+                <h5 class="tp-h3">Bandeja Despejada</h5>
+                <p class="tp-body mb-0">No posee casos pendientes asignados a su perfil operativo.</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- MODALES DINÁMICOS -->
+<!-- ========================================== -->
+
+<!-- Contenedor inyector para Fetch API (Detalle y Reasignar) -->
+<div class="modal fade" id="dynamicTicketModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <!-- El contenido se inyecta aquí mediante JS -->
         </div>
     </div>
 </div>
@@ -240,4 +171,5 @@
 
 {% block extra_js %}
     <script src="{% static 'tikects_app/js/tickets/tikects_asignados_agentes.js' %}?v=3"></script>
+    <script src="{% static 'tikects_app/js/tickets/tickets_modales.js' %}?v=1"></script>
 {% endblock %}

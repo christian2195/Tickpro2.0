@@ -2,45 +2,40 @@
    ESTILOS DE GESTIÓN DE PERMISOS
    ============================================ */
 
-/* --- Paneles --- */
-.card .card-header {
-    border-radius: 12px 12px 0 0 !important;
+/* Contenedores de las tablas duales */
+.tp-permissions-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    overflow: hidden;
+}
+.tp-permissions-card .tp-card-header {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
+}
+.tp-permissions-card .tp-card-footer {
+    background-color: var(--tp-surface-alt);
+    border-top: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-12) var(--tp-sp-24);
 }
 
-.card .table {
-    font-size: 0.85rem;
+/* Leyenda de Permisos */
+.tp-legend-card {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+}
+.tp-legend-card .tp-card-header {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 1px solid var(--tp-border-strong);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
 }
 
-.card .table td {
+/* Alineación vertical estricta para celdas */
+.tp-data-table tbody td {
     vertical-align: middle;
-}
-
-/* --- Badges de permisos --- */
-.badge.bg-danger {
-    background: linear-gradient(135deg, #b71c1c, #c62828) !important;
-}
-
-.badge.bg-warning {
-    background: linear-gradient(135deg, #f57f17, #f9a825) !important;
-}
-
-.badge.bg-info {
-    background: linear-gradient(135deg, #00695c, #00897b) !important;
-}
-
-/* --- Leyenda --- */
-.card.bg-secondary .card-header {
-    background: #6c757d !important;
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card .table {
-        font-size: 0.75rem;
-    }
-    
-    .card .table .badge {
-        font-size: 0.6rem;
-        padding: 0.2rem 0.4rem;
-    }
 }

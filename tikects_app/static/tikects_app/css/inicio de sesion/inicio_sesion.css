@@ -1,111 +1,109 @@
 /* ============================================
-   ESTILOS DE LOGIN
+   ESTILOS DE LOGIN - REFINADOS CLAROS
    ============================================ */
 
-body {
-    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
-                      url("../../images/fondo-inicio.jpg");
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    min-height: 100vh;
+main.container { padding: 0 !important; max-width: 100% !important; }
+.tp-login-layout { margin-top: -3rem; }
+
+/* Lado Izquierdo: Branding Azul Degradado Suave */
+.branding-side {
+    background: linear-gradient(135deg, var(--tp-navbar-bg) 0%, var(--tp-accent) 100%);
+    border-right: 1px solid var(--tp-border-dark);
 }
 
-.card {
-    background-color: rgba(255, 255, 255, 0.95) !important;
-    backdrop-filter: blur(5px);
-    border: none !important;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
-    border-radius: 16px;
-    overflow: hidden;
+/* Forzamos tipografía blanca en el panel izquierdo (para pisar los inline-styles del HTML) */
+.branding-side * {
+    color: var(--tp-surface) !important;
 }
 
-.card .card-header {
-    border-radius: 16px 16px 0 0 !important;
-    padding: 2rem;
+/* Línea sutil en blanco con opacidad */
+.tp-hairline-accent {
+    width: 48px;
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.5);
 }
 
-.card .card-header i {
-    color: rgba(255, 255, 255, 0.9);
+/* Lado Derecho: Fondo general más roto para crear contraste */
+.bg-white.position-relative {
+    /* Ocultamos el bg-white de Bootstrap usando el gris/azul del sistema */
+    background-color: var(--tp-bg-base) !important;
 }
 
-.card .card-body {
-    padding: 2.5rem !important;
+/* Ruido/Textura mejorada: Puntos más notorios y halo sutil de acento */
+.tp-bg-texture {
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background-image: 
+        radial-gradient(var(--tp-border-strong) 1px, transparent 1px),
+        radial-gradient(circle at 100% 0%, rgba(37, 99, 235, 0.05), transparent 60%);
+    background-size: 28px 28px, 100% 100%;
+    opacity: 0.8;
+    pointer-events: none;
 }
 
-.card .card-footer {
-    border-radius: 0 0 16px 16px !important;
-    background: rgba(255, 255, 255, 0.5);
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
+/* El contenedor resalta porque es blanco puro sobre el fondo roto */
+.tp-form-container {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    /* Una sombra un poco más estructurada para que no flote en el vacío */
+    box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04), 0 1px 3px rgba(15, 23, 42, 0.02);
 }
 
-.card .input-group-text {
-    background: #f8f9fa;
-    border-right: none;
-    color: #6c757d;
+.tp-input {
+    border: 1px solid var(--tp-border-dark);
+    border-radius: var(--tp-rad-md);
+    padding: 0.75rem 1rem;
+    font-size: 1rem;
+    background-color: var(--tp-bg-base);
+    transition: all var(--tp-trans);
+    box-shadow: none !important;
+}
+.tp-input:focus {
+    background-color: var(--tp-surface);
+    border-color: var(--tp-accent);
+    /* Focus Ring claro (Azul suave) */
+    outline: 3px solid var(--tp-accent-soft); 
+    outline-offset: 0;
 }
 
-.card .input-group .form-control {
-    border-left: none;
+.tp-checkbox {
+    width: 1.25rem;
+    height: 1.25rem;
+    border-color: var(--tp-border-dark);
+    border-radius: var(--tp-rad-sm) !important;
+    cursor: pointer;
+}
+.tp-checkbox:checked {
+    background-color: var(--tp-accent);
+    border-color: var(--tp-accent);
 }
 
-.card .input-group .form-control:focus {
-    box-shadow: none;
-    border-color: #1565c0;
+.tp-separator {
+    display: flex;
+    align-items: center;
+    text-align: center;
+    color: var(--tp-ink-ter);
 }
-
-.card .input-group:focus-within {
-    box-shadow: 0 0 0 0.2rem rgba(21, 101, 192, 0.25);
-    border-radius: 8px;
+.tp-separator::before, .tp-separator::after {
+    content: '';
+    flex: 1;
+    border-bottom: 1px solid var(--tp-border-strong);
 }
-
-.card .input-group:focus-within .input-group-text {
-    border-color: #1565c0;
-}
-
-.card .input-group:focus-within .form-control {
-    border-color: #1565c0;
-}
-
-.card .btn-primary {
-    background: linear-gradient(135deg, #0d47a1, #1565c0);
-    border: none;
-    padding: 0.75rem;
+.tp-separator span {
+    padding: 0 var(--tp-sp-16);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
     font-weight: 600;
-    letter-spacing: 0.5px;
 }
 
-.card .btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.4);
-}
-
-.card .btn-primary:disabled {
-    opacity: 0.7;
-    transform: none;
-}
-
-.card .btn-outline-secondary {
-    border-color: #ced4da;
-}
-
-.card .btn-outline-secondary:hover {
-    background: #f8f9fa;
-    border-color: #adb5bd;
-}
-
-/* --- Responsive --- */
-@media (max-width: 576px) {
-    .card .card-body {
-        padding: 1.5rem !important;
-    }
-    
-    .card .card-header {
-        padding: 1.5rem;
-    }
-    
-    .card .card-header h3 {
-        font-size: 1.5rem;
-    }
+/* Configuramos la línea lateral del eyebrow en el panel azul */
+.branding-side .tp-eyebrow::before,
+.branding-side .tp-eyebrow::after {
+    content: '';
+    display: block !important; 
+    width: 32px; /* Largo de las líneas (más sutil) */
+    height: 2px;
+    background-color: rgba(255, 255, 255, 0.5);
 }

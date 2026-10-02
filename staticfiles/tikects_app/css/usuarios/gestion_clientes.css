@@ -1,0 +1,70 @@
+/* ============================================
+   ESTILOS DE GESTIÓN DE CLIENTES
+   ============================================ */
+
+/* --- Botones de acción --- */
+.btn-group .btn {
+    font-size: 0.85rem;
+    padding: 0.4rem 0.8rem;
+}
+
+/* --- Tabla de clientes --- */
+.table .btn-group {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.table tr:hover .btn-group {
+    opacity: 1;
+}
+
+.table .badge.bg-light.text-dark {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+}
+
+/* --- Paginación --- */
+.pagination {
+    margin-bottom: 0;
+}
+
+/* --- Modal de cliente --- */
+#modalCliente .modal-header {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+}
+
+#modalCliente .modal-footer .btn-success {
+    background: linear-gradient(135deg, #2e7d32, #388e3c);
+    border: none;
+}
+
+#modalCliente .invalid-feedback {
+    font-size: 0.8rem;
+}
+
+#modalCliente .alert-info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+/* --- Mensajes de confirmación --- */
+#modalEliminarCliente .modal-header {
+    background: linear-gradient(135deg, #b71c1c, #c62828);
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .table .btn-group {
+        opacity: 1;
+    }
+    
+    .table .btn-group .btn {
+        font-size: 0.7rem;
+        padding: 0.2rem 0.4rem;
+    }
+    
+    #modalCliente .modal-body {
+        padding: 1rem;
+    }
+}

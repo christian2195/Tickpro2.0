@@ -14,6 +14,10 @@ import openpyxl
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas
 from datetime import datetime
+from django.shortcuts import render, get_object_or_404
+from django.http import JsonResponse, HttpResponseBadRequest
+from django.contrib.auth.decorators import login_required
+from .models import Tickets, Grupos_Agentes, Agentes
 
 # ============================================
 # MODELOS
@@ -302,6 +306,11 @@ def editar_cliente(request, cliente_id):
             messages.error(request, "Nombre, apellido, usuario y gerencia son obligatorios.")
             return redirect('ver_cliente')
 
+        # VALIDACIÓN CLAVE: Validar que el nuevo username no lo tenga OTRA cuenta
+        if User.objects.filter(username=username).exclude(id=cliente.usuario.id).exists():
+            messages.error(request, f"El nombre de usuario '{username}' ya está en uso por otra cuenta.")
+            return redirect('ver_cliente')
+
         try:
             user = cliente.usuario
             user.username = username
@@ -417,49 +426,34 @@ def crear_agente(request):
         messages.error(request, "Todos los campos son obligatorios.")
         return redirect('gestion_agentes')
 
+    # VALIDACIÓN CLAVE: Prevenir que se solape con un cliente u otro agente existente
+    if User.objects.filter(username=username).exists():
+        messages.error(request, f"El nombre de usuario '{username}' ya está registrado en el sistema.")
+        return redirect('gestion_agentes')
+
     try:
-        user, created = User.objects.get_or_create(
+        # Usamos create_user en lugar de get_or_create para garantizar una cuenta nueva
+        user = User.objects.create_user(
             username=username,
-            defaults={'email': email, 'first_name': nombre, 'last_name': apellido}
+            email=email,
+            password=password,
+            first_name=nombre,
+            last_name=apellido
         )
         
-        if not created:
-            user.first_name = nombre
-            user.last_name = apellido
-            user.email = email
-            if password:
-                user.set_password(password)
-            user.save()
-            messages.info(request, f"Usuario {username} actualizado.")
-        else:
-            user.set_password(password)
-            user.save()
-            messages.success(request, f"Usuario {username} creado exitosamente.")
-        
-        agente, created = Agentes.objects.get_or_create(
+        Agentes.objects.create(
             usuario=user,
-            defaults={
-                'nombre_usuario': username,
-                'nombre': nombre,
-                'apellido': apellido,
-                'correo': email,
-            }
+            nombre_usuario=username,
+            nombre=nombre,
+            apellido=apellido,
+            correo=email,
         )
         
-        if not created:
-            agente.nombre_usuario = username
-            agente.nombre = nombre
-            agente.apellido = apellido
-            agente.correo = email
-            agente.save()
-            messages.info(request, f"Perfil de agente para {username} actualizado.")
-        else:
-            messages.success(request, f"Perfil de agente para {username} creado.")
-        
+        messages.success(request, f"Perfil de agente para {username} creado exitosamente.")
         return redirect('gestion_agentes')
         
     except Exception as e:
-        messages.error(request, f"Error: {str(e)}")
+        messages.error(request, f"Error al crear el agente: {str(e)}")
         return redirect('gestion_agentes')
 
 @superuser_required
@@ -477,6 +471,11 @@ def editar_agente(request, agente_id):
 
         if not all([nombre, apellido, username, email]):
             messages.error(request, "Nombre, apellido, usuario y email son obligatorios.")
+            return redirect('gestion_agentes')
+
+        # VALIDACIÓN CLAVE: Validar que el nuevo username no lo tenga OTRA cuenta
+        if User.objects.filter(username=username).exclude(id=usuario.id).exists():
+            messages.error(request, f"El nombre de usuario '{username}' ya está en uso por otra cuenta.")
             return redirect('gestion_agentes')
 
         try:
@@ -738,19 +737,20 @@ def _get_tickets_base(request, estado=None):
     user = request.user
     
     if user.is_superuser:
-        queryset = Tickets.objects.all()
+        # AÑADIDO: select_related para evitar el N+1
+        queryset = Tickets.objects.select_related('usuario', 'servicio', 'cliente').all()
     else:
         # Para agentes, mostrar tickets creados por ellos o reasignados
         try:
             agente = Agentes.objects.get(usuario=user)
-            tickets_creados = Tickets.objects.filter(usuario=user)
-            tickets_reasignados = Tickets.objects.filter(
+            tickets_creados = Tickets.objects.select_related('usuario', 'servicio', 'cliente').filter(usuario=user)
+            tickets_reasignados = Tickets.objects.select_related('usuario', 'servicio', 'cliente').filter(
                 id__in=ReasignacionTikects.objects.filter(agente_nuevo=agente).values_list('tikect_id', flat=True)
             )
             queryset = (tickets_creados | tickets_reasignados).distinct()
         except Agentes.DoesNotExist:
             # Para clientes normales, solo sus tickets
-            queryset = Tickets.objects.filter(usuario=user)
+            queryset = Tickets.objects.select_related('usuario', 'servicio', 'cliente').filter(usuario=user)
     
     if estado == 'cerrado':
         queryset = queryset.filter(estado__iexact='cerrado')
@@ -779,16 +779,36 @@ def ver_tikects(request):
     elif url_name == 'ver_tikects_abiertos':
         estado = 'abierto'
     
+    # 1. Calculamos las estadísticas BASE (sin importar el filtro actual)
+    tickets_base = _get_tickets_base(request, None)
+    tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
+    tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
+    
+    # 2. Obtenemos los IDs de los tickets reasignados
+    reasignados_ids = set()
+    for r in ReasignacionTikects.objects.select_related('agente_nuevo').all():
+        if r.agente_nuevo:
+            reasignados_ids.add(r.tikect.id)
+            
+    tikects_reasignados_count = len(reasignados_ids)
+    
+    # 3. Aplicamos la paginación a la lista filtrada
     tikects = _get_tickets_base(request, estado)
     paginator = Paginator(tikects, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    reasignaciones_dict = _get_reasignaciones_dict(tikects)
     
-    return render(request, 'tickets/tikects_ver_todos.html', {
+    context = {
         'tikects': page_obj,
-        'reasignaciones_dict': reasignaciones_dict
-    })
+        'tikects_abiertos': tikects_abiertos,
+        'tikects_cerrados': tikects_cerrados,
+        'tikects_reasignados': tikects_reasignados_count,
+        'reasignados_ids': reasignados_ids,
+        'servicios': Tickets_Servicios.objects.all(),
+        'gerencias': Gerencia.objects.all(),
+    }
+    
+    return render(request, 'tickets/tikects_ver_todos.html', context)
 
 ver_tikects_cerrados = ver_tikects
 ver_tikects_abiertos = ver_tikects
@@ -806,7 +826,8 @@ def ver_mis_tikects(request):
     elif url_name == 'ver_mis_tikects_abiertos':
         estado = 'abierto'
     
-    tikects = Tickets.objects.filter(usuario=request.user).order_by('-fecha_creacion')
+    # AÑADIDO: select_related para evitar el N+1
+    tikects = Tickets.objects.select_related('usuario', 'servicio', 'cliente').filter(usuario=request.user).order_by('-fecha_creacion')
     if estado == 'cerrado':
         tikects = tikects.filter(estado='cerrado')
     elif estado == 'abierto':
@@ -816,7 +837,14 @@ def ver_mis_tikects(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
     
-    return render(request, 'tickets/tikects_vista_lista_cliente.html', {'page_obj': page_obj})
+    # AÑADIDO: servicios y gerencias para el modal de Crear Ticket incrustado
+    context = {
+        'page_obj': page_obj,
+        'servicios': Tickets_Servicios.objects.all(),
+        'gerencias': Gerencia.objects.all(),
+    }
+    
+    return render(request, 'tickets/tikects_vista_lista_cliente.html', context)
 
 ver_mis_tikects_cerrados = ver_mis_tikects
 ver_mis_tikects_abiertos = ver_mis_tikects
@@ -832,7 +860,8 @@ def ver_tikects_asignados_agentes(request):
     
     # Si es superusuario, mostrar todos los tickets
     if user.is_superuser:
-        tickets_base = Tickets.objects.all().order_by('-fecha_creacion')
+        # AÑADIDO: select_related
+        tickets_base = Tickets.objects.select_related('usuario', 'servicio', 'cliente').all().order_by('-fecha_creacion')
         tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
         tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
         
@@ -848,7 +877,6 @@ def ver_tikects_asignados_agentes(request):
         page_number = request.GET.get('page')
         page_obj = paginator.get_page(page_number)
 
-        # Crear un set de IDs de tickets reasignados para consulta rápida
         reasignados_ids = set()
         for r in ReasignacionTikects.objects.all():
             try:
@@ -861,7 +889,7 @@ def ver_tikects_asignados_agentes(request):
             'tikects': page_obj,
             'tikects_abiertos': tikects_abiertos,
             'tikects_cerrados': tikects_cerrados,
-            'reasignados_ids': reasignados_ids,  # Cambio: usar set de IDs
+            'reasignados_ids': reasignados_ids,
             'es_superusuario': True,
         }
         return render(request, 'tickets/tikects_asignados_agentes.html', context)
@@ -873,7 +901,8 @@ def ver_tikects_asignados_agentes(request):
         messages.warning(request, "No tienes un perfil de agente asignado.")
         return redirect('pagina_principal')
     
-    tickets_base = Tickets.objects.filter(usuario=user).order_by('-fecha_creacion')
+    # AÑADIDO: select_related
+    tickets_base = Tickets.objects.select_related('usuario', 'servicio', 'cliente').filter(usuario=user).order_by('-fecha_creacion')
     tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
     tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
 
@@ -889,7 +918,6 @@ def ver_tikects_asignados_agentes(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    # Crear un set de IDs de tickets reasignados para consulta rápida
     reasignados_ids = set()
     for r in ReasignacionTikects.objects.all():
         try:
@@ -902,7 +930,7 @@ def ver_tikects_asignados_agentes(request):
         'tikects': page_obj,
         'tikects_abiertos': tikects_abiertos,
         'tikects_cerrados': tikects_cerrados,
-        'reasignados_ids': reasignados_ids,  # Cambio: usar set de IDs
+        'reasignados_ids': reasignados_ids,
         'es_superusuario': False,
     }
     return render(request, 'tickets/tikects_asignados_agentes.html', context)
@@ -1222,10 +1250,25 @@ def crear_tikects_clientes(request):
         titulo = request.POST.get('titulo')
         descripcion = request.POST.get('descripcion')
         servicio_id = request.POST.get('servicio')
+        gerencia_nombre = request.POST.get('gerencia') # Capturamos la gerencia
         usuario = request.user
 
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
-        cliente = Cliente.objects.filter(usuario=usuario).first()
+        gerencia_obj = Gerencia.objects.filter(nombre=gerencia_nombre).first()
+
+        # Aseguramos que el usuario tenga perfil de Cliente y le asignamos la gerencia
+        cliente, _ = Cliente.objects.get_or_create(
+            usuario=usuario,
+            defaults={
+                'nombre': usuario.get_full_name() or usuario.username,
+                'correo': usuario.email,
+                'gerencia': gerencia_obj
+            }
+        )
+        # Si ya existía el cliente pero eligió otra gerencia, la actualizamos
+        if gerencia_obj and cliente.gerencia != gerencia_obj:
+            cliente.gerencia = gerencia_obj
+            cliente.save()
 
         nuevo_tikect = Tickets.objects.create(
             titulo=titulo,
@@ -1242,7 +1285,7 @@ def crear_tikects_clientes(request):
                     tikect=nuevo_tikect,
                     descripcion=f"Nuevo ticket '{titulo}'",
                     usuario_creador=usuario,
-                    agent=asignacion.agente_actual
+                    agente=asignacion.agente_actual
                 )
         except:
             pass
@@ -1263,18 +1306,55 @@ def crear_tikects(request):
         titulo = request.POST.get('titulo')
         descripcion = request.POST.get('descripcion')
         servicio_id = request.POST.get('servicio')
+        gerencia_nombre = request.POST.get('gerencia') # Capturamos la gerencia
         usuario = request.user
 
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
+        gerencia_obj = Gerencia.objects.filter(nombre=gerencia_nombre).first()
 
-        Tickets.objects.create(
+        # Vinculamos la gerencia al perfil del usuario que crea el ticket
+        cliente, _ = Cliente.objects.get_or_create(
+            usuario=usuario,
+            defaults={
+                'nombre': usuario.get_full_name() or usuario.username,
+                'correo': usuario.email,
+                'gerencia': gerencia_obj
+            }
+        )
+        if gerencia_obj and cliente.gerencia != gerencia_obj:
+            cliente.gerencia = gerencia_obj
+            cliente.save()
+
+        nuevo_tikect = Tickets.objects.create(
             titulo=titulo,
             descripcion=descripcion,
             servicio=servicio,
             usuario=usuario,
+            cliente=cliente,
         )
-        return redirect('ver_tikects')
-    return redirect('crear_tikects')
+
+        # Disparar notificación al agente encargado del servicio (si existe)
+        try:
+            asignacion = AsignacionTikects.objects.get(servicio=servicio)
+            if asignacion.agente_actual:
+                Notificaciones.objects.create(
+                    tikect=nuevo_tikect,
+                    descripcion=f"Nuevo ticket '{titulo}'",
+                    usuario_creador=usuario,
+                    agente=asignacion.agente_actual
+                )
+        except:
+            pass
+
+        # REDIRECCIÓN DINÁMICA BASADA EN EL ROL DEL USUARIO
+        if request.user.is_superuser:
+            return redirect('ver_tikects')
+        elif hasattr(request.user, 'agente'):
+            return redirect('ver_tikects_asignados_agentes')
+        else:
+            return redirect('ver_mis_tikects')
+            
+    return redirect('pagina_principal')
 
 # ============================================
 # ESTADÍSTICAS Y EXPORTACIONES
@@ -1444,3 +1524,68 @@ def check_notifications(request):
 
 def password_reset_view(request):
     return render(request, 'password_reset.html', {'step': 'form'})
+
+@login_required
+def api_detalle_ticket(request, tikect_id):
+    """Devuelve el HTML parcial del detalle del ticket para inyectar en modal."""
+    tikect = get_object_or_404(Tickets.objects.select_related('usuario', 'servicio', 'cliente', 'cerrado_por_agente'), id=tikect_id)
+    
+    # Obtener el agente de forma segura (evita error 500 si no existe)
+    agente_actual = None
+    try:
+        agente_actual = request.user.agente
+    except:
+        pass
+
+    if not (request.user.is_superuser or agente_actual) and tikect.usuario != request.user:
+        return HttpResponseBadRequest("No tiene permiso para ver este ticket.")
+
+    reasignaciones = ReasignacionTikects.objects.filter(tikect=tikect).select_related('agente_anterior__usuario', 'agente_nuevo__usuario')
+    reasignado = False
+    if reasignaciones.exists():
+        agente_nuevo = reasignaciones.last().agente_nuevo
+        if agente_actual and agente_nuevo == agente_actual:
+            reasignado = True
+
+    context = {
+        'tikect': tikect,
+        'reasignado': reasignado,
+        'reasignaciones': reasignaciones
+    }
+    return render(request, 'tickets/partials/_detalle_modal.html', context)
+
+@login_required
+def api_reasignar_ticket(request, tikect_id):
+    """Devuelve el HTML parcial o procesa la reasignación vía AJAX."""
+    ticket = get_object_or_404(Tickets.objects.select_related('servicio', 'usuario'), id=tikect_id)
+    
+    try:
+        agente_actual = Agentes.objects.get(usuario=request.user)
+    except Agentes.DoesNotExist:
+        return HttpResponseBadRequest("No tienes permisos para reasignar tickets.")
+
+    if request.method == 'POST':
+        nuevo_agente_id = request.POST.get('nuevo_agente')
+        if nuevo_agente_id:
+            try:
+                nuevo_agente = Agentes.objects.get(id=nuevo_agente_id)
+                ReasignacionTikects.objects.create(
+                    tikect=ticket,
+                    agente_anterior=agente_actual,
+                    agente_nuevo=nuevo_agente
+                )
+                return JsonResponse({'status': 'success', 'message': 'Ticket reasignado exitosamente'})
+            except Exception as e:
+                return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        return JsonResponse({'status': 'error', 'message': 'Agente no válido'}, status=400)
+
+    grupo_agente_actual = Agentes_Por_Grupos.objects.filter(agente=agente_actual).first()
+    agentes_grupo = []
+    if grupo_agente_actual:
+        agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo=grupo_agente_actual.grupo).exclude(id=agente_actual.id)
+
+    context = {
+        'tikect': ticket,
+        'agentes_grupo': agentes_grupo
+    }
+    return render(request, 'tickets/partials/_reasignar_modal.html', context)

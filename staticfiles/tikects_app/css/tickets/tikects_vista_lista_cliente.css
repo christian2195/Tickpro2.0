@@ -1,0 +1,82 @@
+/* ============================================
+   ESTILOS DE LISTA DE TICKETS DEL CLIENTE
+   ============================================ */
+
+/* --- Botones de filtro --- */
+.btn-group .btn {
+    font-weight: 500;
+    padding: 0.5rem 1rem;
+}
+
+/* --- Tarjetas de estadísticas --- */
+.card.text-white .card-body {
+    padding: 1rem 1.25rem;
+}
+
+.card.text-white .card-title {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    opacity: 0.8;
+}
+
+.card.text-white h3 {
+    font-size: 1.75rem;
+    font-weight: 700;
+}
+
+/* --- Tabla de tickets --- */
+.table .badge {
+    font-size: 0.7rem;
+    padding: 0.3rem 0.6rem;
+}
+
+.table .btn-primary {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    border: none;
+}
+
+.table .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(21, 101, 192, 0.3);
+}
+
+/* --- Información de contacto --- */
+.card-header.bg-info {
+    background: linear-gradient(135deg, #00695c, #00897b) !important;
+}
+
+.contact-card i {
+    background: rgba(13, 202, 240, 0.1);
+    padding: 0.8rem;
+    border-radius: 50%;
+}
+
+.contact-card h6 {
+    margin-top: 0.5rem;
+    font-weight: 600;
+}
+
+/* --- Paginación --- */
+.pagination .page-link {
+    border: none;
+    border-radius: 8px;
+    margin: 0 2px;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+    color: #fff;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card.text-white h3 {
+        font-size: 1.25rem;
+    }
+    
+    .btn-group .btn {
+        font-size: 0.8rem;
+        padding: 0.3rem 0.6rem;
+    }
+}

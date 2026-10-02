@@ -1,0 +1,73 @@
+/* ============================================
+   ESTILOS DE CONFIGURACIÓN
+   ============================================ */
+
+/* --- Tarjetas de módulos --- */
+.card {
+    border: none;
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+}
+
+.card-header {
+    border-radius: 12px 12px 0 0 !important;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    padding: 0.75rem 1.25rem;
+}
+
+.card-header i {
+    font-size: 1.1rem;
+}
+
+/* --- List group items --- */
+.list-group-item {
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+    padding: 0.75rem 1rem;
+    transition: all 0.2s ease;
+}
+
+.list-group-item:last-child {
+    border-bottom: none;
+}
+
+.list-group-item:hover {
+    background-color: #f8f9fa;
+    transform: translateX(4px);
+}
+
+.list-group-item i {
+    width: 24px;
+    text-align: center;
+    font-size: 1.1rem;
+}
+
+.list-group-item strong {
+    font-size: 0.95rem;
+}
+
+.list-group-item small {
+    font-size: 0.75rem;
+}
+
+/* --- Botón de estadísticas --- */
+.btn-outline-light:hover {
+    background-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card:hover {
+        transform: none;
+    }
+    
+    .list-group-item:hover {
+        transform: none;
+    }
+}

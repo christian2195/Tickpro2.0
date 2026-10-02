@@ -4,99 +4,75 @@
 {% block title %}Crear Ticket {% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_crear.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_crear.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
 <!-- Encabezado de página -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-plus-circle me-3"></i> NUEVO TICKET
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
-                    <li class="breadcrumb-item active">Nuevo Ticket</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Apertura de Ticket</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
+                <li class="breadcrumb-item active">Nuevo Ticket</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
+<div class="container-fluid p-0">
     <div class="row">
         <div class="col-lg-8 mx-auto">
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="fas fa-ticket-alt me-2"></i> Formulario de Creación de Ticket</h5>
+            <div class="card mb-5">
+                <div class="tp-card-header">
+                    <div class="tp-eyebrow mb-0">Formulario de Requerimiento</div>
                 </div>
-                <div class="card-body">
+                <div class="card-body p-4 p-md-5">
                     <form method="post" action="{% url 'crear_tikects' %}" class="needs-validation" novalidate>
                         {% csrf_token %}
                         
-                        <div class="row">
+                        <div class="row g-4 mb-4">
                             <!-- Servicio -->
-                            <div class="col-md-12 mb-3">
-                                <label for="servicio" class="form-label">Servicio <span class="text-danger">*</span></label>
-                                <select class="form-select" id="servicio" name="servicio" required>
-                                    <option value="" disabled selected>-- Seleccione un servicio --</option>
+                            <div class="col-md-12">
+                                <label for="servicio" class="form-label tp-caption text-uppercase fw-bold">Clasificación de Servicio <span class="text-danger">*</span></label>
+                                <select class="form-select tp-input" id="servicio" name="servicio" required>
+                                    <option value="" disabled selected>-- Elija la categoría pertinente --</option>
                                     {% for servicio in servicios %}
                                         <option value="{{ servicio.id }}">{{ servicio.nombre }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="invalid-feedback">Debe seleccionar un servicio.</div>
+                                <div class="invalid-feedback">Requerido para el enrutamiento del ticket.</div>
                             </div>
-
-                            <!-- ELIMINADO: Cola (ya no se usa) -->
-                        </div>
-
-                        <div class="row">
+                            
                             <!-- Gerencia -->
-                            <div class="col-md-12 mb-3">
-                                <label for="gerencia" class="form-label">Gerencia <span class="text-danger">*</span></label>
-                                <select class="form-select" id="gerencia" name="gerencia" required>
-                                    <option value="" disabled selected>-- Seleccione una gerencia --</option>
+                            <div class="col-md-12">
+                                <label for="gerencia" class="form-label tp-caption text-uppercase fw-bold">Unidad Requirente (Gerencia) <span class="text-danger">*</span></label>
+                                <select class="form-select tp-input" id="gerencia" name="gerencia" required>
+                                    <option value="" disabled selected>-- Ubicación de la solicitud --</option>
                                     {% for gerencia in gerencias %}
                                         <option value="{{ gerencia.nombre }}">{{ gerencia.nombre }}</option>
                                     {% endfor %}
                                 </select>
-                                <div class="invalid-feedback">Debe seleccionar una gerencia.</div>
                             </div>
                         </div>
 
                         <!-- Título -->
-                        <div class="mb-3">
-                            <label for="titulo" class="form-label">Título <span class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="titulo" name="titulo" 
-                                   placeholder="Ej: Problema con el sistema de facturación" required>
-                            <div class="invalid-feedback">El título es obligatorio.</div>
+                        <div class="mb-4">
+                            <label for="titulo" class="form-label tp-caption text-uppercase fw-bold">Asunto Principal <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control tp-input" id="titulo" name="titulo" placeholder="Resumen corto del incidente" required>
                         </div>
 
                         <!-- Descripción -->
-                        <div class="mb-4">
-                            <label for="descripcion" class="form-label">Descripción del Problema <span class="text-danger">*</span></label>
-                            <textarea class="form-control" id="descripcion" name="descripcion" 
-                                      rows="5" placeholder="Describa detalladamente el problema o solicitud" required></textarea>
-                            <div class="invalid-feedback">La descripción es obligatoria.</div>
-                            <small class="text-muted">Sea lo más específico posible para ayudar a resolver el ticket más rápido.</small>
+                        <div class="mb-5">
+                            <label for="descripcion" class="form-label tp-caption text-uppercase fw-bold">Memoria Descriptiva <span class="text-danger">*</span></label>
+                            <textarea class="form-control tp-input" id="descripcion" name="descripcion" rows="6" placeholder="Detalle los síntomas, el entorno y los pasos necesarios para reproducir el fallo..." required></textarea>
+                            <div class="tp-caption mt-2">Documentación precisa agiliza los tiempos de diagnóstico en el nivel 1.</div>
                         </div>
 
-                        <!-- Información adicional -->
-                        <div class="alert alert-info">
-                            <i class="fas fa-info-circle me-2"></i>
-                            <strong>Nota:</strong> Al crear el ticket, se notificará automáticamente al agente asignado al servicio seleccionado.
-                        </div>
-
-                        <!-- Botones de acción -->
-                        <div class="d-flex justify-content-end gap-2">
-                            <a href="{% url 'pagina_principal' %}" class="btn btn-secondary">
-                                <i class="fas fa-times me-2"></i> Cancelar
-                            </a>
-                            <button type="submit" class="btn btn-success">
-                                <i class="fas fa-check-circle me-2"></i> Crear Ticket
-                            </button>
+                        <div class="d-flex justify-content-end gap-2 border-top pt-4" style="border-color: var(--tp-border-light) !important;">
+                            <a href="{% url 'pagina_principal' %}" class="btn btn-outline-primary">Cancelar Proceso</a>
+                            <button type="submit" class="btn btn-primary">Registrar e Iniciar Flujo</button>
                         </div>
                     </form>
                 </div>

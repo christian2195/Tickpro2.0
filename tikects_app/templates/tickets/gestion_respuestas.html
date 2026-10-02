@@ -4,183 +4,140 @@
 {% block title %}Gestión de Respuestas Automáticas{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/gestion_respuestas.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/gestion_respuestas.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
-<!-- Encabezado -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-comments me-3"></i> RESPUESTAS AUTOMÁTICAS
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
-                    <li class="breadcrumb-item active">Respuestas Automáticas</li>
-                </ol>
-            </nav>
-        </div>
+<!-- Encabezado de página -->
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Respuestas Automáticas</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
+                <li class="breadcrumb-item active">Respuestas Automáticas</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
-    {% if messages %}
-        {% for message in messages %}
-            <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                <i class="fas {% if message.tags == 'success' %}fa-check-circle{% elif message.tags == 'error' %}fa-exclamation-circle{% else %}fa-info-circle{% endif %} me-2"></i>
-                {{ message }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        {% endfor %}
-    {% endif %}
-
-    <!-- Botón Nueva Respuesta -->
-    <div class="mb-4">
-        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalRespuesta" data-mode="crear">
-            <i class="fas fa-plus-circle me-2"></i> Nueva Respuesta Automática
+<div class="container-fluid p-0">
+    <div class="mb-4 d-flex justify-content-end">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalRespuesta" data-mode="crear">
+            <i class="fas fa-plus me-2"></i> Nueva Respuesta
         </button>
     </div>
 
-    <!-- Tabla de respuestas -->
-    <div class="card shadow-sm">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Respuestas Automáticas</h5>
-            <span class="badge bg-light text-dark">Total: {{ respuestas_automaticas|length }}</span>
+    <!-- Contenedor Tabla -->
+    <div class="tp-table-container mb-4">
+        <div class="d-flex justify-content-between align-items-center p-4 bg-white border-bottom" style="border-color: var(--tp-border-strong);">
+            <div class="tp-eyebrow m-0">Directorio de Respuestas</div>
+            <span class="tp-caption">Total: {{ respuestas_automaticas|length }}</span>
         </div>
-        <div class="card-body">
-            {% if respuestas_automaticas %}
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead class="table-primary">
-                            <tr>
-                                <th>#</th>
-                                <th>Texto de la Respuesta</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for respuesta in respuestas_automaticas %}
-                            <tr>
-                                <td>{{ forloop.counter }}</td>
-                                <td>{{ respuesta.nombre|truncatechars:80 }}</td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <button type="button" class="btn btn-info" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalPreview{{ respuesta.id }}">
-                                            <i class="fas fa-eye"></i>
-                                        </button>
-                                        <button type="button" class="btn btn-danger" 
-                                                data-bs-toggle="modal" 
-                                                data-bs-target="#modalEliminarRespuesta"
-                                                data-id="{{ respuesta.id }}"
-                                                data-nombre="{{ respuesta.nombre|truncatechars:50 }}">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
-                                    </div>
-                                </td>
-                            </tr>
+        
+        {% if respuestas_automaticas %}
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">#</th>
+                            <th style="width: 80%;">Texto de la Respuesta</th>
+                            <th style="width: 15%;" class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for respuesta in respuestas_automaticas %}
+                        <tr class="tp-table-row">
+                            <td class="tp-caption fw-bold">{{ forloop.counter }}</td>
+                            <td class="tp-body text-dark">{{ respuesta.nombre|truncatechars:80 }}</td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <button type="button" class="tp-action-btn" data-bs-toggle="modal" data-bs-target="#modalPreview{{ respuesta.id }}" title="Vista previa">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    <button type="button" class="tp-action-btn danger" data-bs-toggle="modal" data-bs-target="#modalEliminarRespuesta" data-id="{{ respuesta.id }}" data-nombre="{{ respuesta.nombre|truncatechars:50 }}" title="Eliminar">
+                                        <i class="fas fa-trash-alt"></i>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
 
-                            <!-- Modal de Vista Previa -->
-                            <div class="modal fade" id="modalPreview{{ respuesta.id }}" tabindex="-1" aria-hidden="true">
-                                <div class="modal-dialog">
-                                    <div class="modal-content">
-                                        <div class="modal-header bg-info text-white">
-                                            <h5 class="modal-title">
-                                                <i class="fas fa-eye me-2"></i> Vista Previa
-                                            </h5>
-                                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                        <!-- Modal de Vista Previa -->
+                        <div class="modal fade" id="modalPreview{{ respuesta.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+                                    <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="modal-title tp-h3 m-0">Vista Previa</h5>
+                                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body p-4">
+                                        <div class="tp-preview-box tp-body text-dark">
+                                            {{ respuesta.nombre|linebreaks }}
                                         </div>
-                                        <div class="modal-body">
-                                            <div class="p-3 bg-light rounded">
-                                                {{ respuesta.nombre|linebreaks }}
-                                            </div>
-                                        </div>
-                                        <div class="modal-footer">
-                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
-                                        </div>
+                                    </div>
+                                    <div class="modal-footer border-top-0 px-4 pb-4">
+                                        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cerrar</button>
                                     </div>
                                 </div>
                             </div>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-comments fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No hay respuestas automáticas configuradas</h5>
-                    <p class="text-muted mb-3">Las respuestas automáticas permiten agilizar la atención de tickets comunes.</p>
-                </div>
-            {% endif %}
-        </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5 bg-white">
+                <i class="fas fa-comments fa-3x text-muted mb-3 opacity-50"></i>
+                <h5 class="tp-h3">No hay respuestas configuradas</h5>
+                <p class="tp-body mb-0">Agregue plantillas para agilizar la atención técnica.</p>
+            </div>
+        {% endif %}
     </div>
 </div>
 
-<!-- ========================================== -->
 <!-- MODAL: Crear Respuesta -->
-<!-- ========================================== -->
 <div class="modal fade" id="modalRespuesta" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-primary text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-comment-dots me-2"></i> Nueva Respuesta Automática
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0">Nueva Respuesta</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
             <form method="post" action="{% url 'tikects_respuestas_automaticas_crear' %}" class="needs-validation" novalidate>
                 {% csrf_token %}
-                <div class="modal-body">
+                <div class="modal-body p-4">
                     <div class="mb-3">
-                        <label class="form-label">Texto de la Respuesta <span class="text-danger">*</span></label>
-                        <textarea class="form-control" name="respuesta" rows="5" 
-                                  placeholder="Escriba aquí el texto de la respuesta automática..." required></textarea>
-                        <div class="invalid-feedback">La respuesta es obligatoria.</div>
-                        <small class="text-muted">Puede incluir variables como {nombre_cliente}, {id_ticket}, etc.</small>
-                    </div>
-
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-2"></i>
-                        <small>Las respuestas automáticas permiten responder rápidamente a consultas frecuentes.</small>
+                        <label class="form-label tp-caption text-uppercase fw-bold">Cuerpo del mensaje <span class="text-danger">*</span></label>
+                        <textarea class="form-control" style="border: 1px solid var(--tp-border-strong); border-radius: var(--tp-rad-md);" name="respuesta" rows="5" placeholder="Redacte la respuesta predefinida..." required></textarea>
+                        <div class="invalid-feedback">Este campo es requerido.</div>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-success">
-                        <i class="fas fa-check-circle me-2"></i> Crear
-                    </button>
+                <div class="modal-footer border-top-0 px-4 pb-4">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Guardar Plantilla</button>
                 </div>
             </form>
         </div>
     </div>
 </div>
 
-<!-- ========================================== -->
 <!-- MODAL: Eliminar Respuesta -->
-<!-- ========================================== -->
 <div class="modal fade" id="modalEliminarRespuesta" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="fas fa-exclamation-triangle me-2"></i> Confirmar Eliminación
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0 text-danger">Confirmar Acción</h5>
+                <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body">
-                <p>¿Está seguro de eliminar la respuesta automática <strong id="eliminarRespuestaNombre"></strong>?</p>
-                <p class="text-muted small">Esta acción no se puede deshacer.</p>
+            <div class="modal-body p-4">
+                <p class="tp-body">¿Está seguro de que desea eliminar la plantilla <strong id="eliminarRespuestaNombre" class="text-dark"></strong>?</p>
+                <p class="tp-caption text-muted mb-0">Esta operación es irreversible.</p>
             </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+            <div class="modal-footer border-top-0 px-4 pb-4">
+                <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
                 <form method="post" id="formEliminarRespuesta">
                     {% csrf_token %}
-                    <button type="submit" class="btn btn-danger">
-                        <i class="fas fa-trash-alt me-2"></i> Eliminar
-                    </button>
+                    <button type="submit" class="btn btn-danger">Eliminar Definitivamente</button>
                 </form>
             </div>
         </div>

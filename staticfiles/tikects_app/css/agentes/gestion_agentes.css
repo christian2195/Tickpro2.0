@@ -1,0 +1,39 @@
+/* ============================================
+   ESTILOS DE GESTIÓN DE AGENTES
+   ============================================ */
+
+/* --- Tabla de agentes --- */
+.table .btn-group {
+    opacity: 0.7;
+    transition: opacity 0.2s ease;
+}
+
+.table tr:hover .btn-group {
+    opacity: 1;
+}
+
+/* --- Modal de agente --- */
+#modalAgente .modal-header {
+    background: linear-gradient(135deg, #0d47a1, #1565c0);
+}
+
+#modalAgente .alert-info {
+    background-color: #e3f2fd;
+    border-color: #90caf9;
+    color: #0d47a1;
+}
+
+#modalAgente .invalid-feedback {
+    font-size: 0.8rem;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .table .btn-group {
+        opacity: 1;
+    }
+    
+    #modalAgente .modal-body {
+        padding: 1rem;
+    }
+}

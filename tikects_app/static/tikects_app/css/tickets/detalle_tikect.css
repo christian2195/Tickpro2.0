@@ -1,86 +1,39 @@
 /* ============================================
-   ESTILOS DE DETALLE DE TICKET
+   ESTILOS DE DETALLE DE TICKET (REDISEÑO)
    ============================================ */
 
-/* --- Cabecera del ticket --- */
-.card-header .badge {
-    font-size: 0.9rem;
-    padding: 0.5rem 1rem;
+/* Reemplazamos los headers coloridos de bootstrap por el patrón editorial */
+.tp-card-header {
+    background-color: var(--tp-surface-alt);
+    border-bottom: 1px solid var(--tp-border-strong);
+    color: var(--tp-ink);
+    padding: var(--tp-sp-16) var(--tp-sp-24);
+    border-radius: var(--tp-rad-lg) var(--tp-rad-lg) 0 0;
 }
 
-/* --- Descripción --- */
-.card-body .bg-light {
-    background-color: #f8f9fa !important;
-    border: 1px solid #e9ecef;
+/* Caja de descripción con fondo sutil */
+.tp-surface-alt-box {
+    background-color: var(--tp-surface-alt);
+    border: 1px solid var(--tp-border);
+    border-radius: var(--tp-rad-md);
+    padding: var(--tp-sp-16);
 }
 
-/* --- Solución --- */
-.bg-success.bg-opacity-10 {
-    background-color: rgba(40, 167, 69, 0.08) !important;
+/* Bloque de solución estructurado (reemplaza al bg-success bg-opacity-10) */
+.tp-alert-success {
+    background-color: var(--tp-success-bg);
+    border: 1px solid var(--tp-success-border);
+    border-left: 4px solid var(--tp-success-dot);
+    border-radius: var(--tp-rad-md);
+    color: var(--tp-ink);
 }
 
-.border-success {
-    border-color: #28a745 !important;
+/* Historial de reasignaciones (list-group minimalista) */
+.tp-timeline-item {
+    border-bottom: 1px solid var(--tp-border-light);
+    padding: var(--tp-sp-12) 0;
 }
-
-/* --- Panel lateral --- */
-.card-header.bg-info {
-    background: linear-gradient(135deg, #00695c, #00897b) !important;
-}
-
-.card-header.bg-warning {
-    background: linear-gradient(135deg, #f57f17, #f9a825) !important;
-}
-
-.card-header.bg-secondary {
-    background: linear-gradient(135deg, #424242, #616161) !important;
-}
-
-/* --- Acciones --- */
-.card .btn-danger {
-    background: linear-gradient(135deg, #b71c1c, #c62828);
-    border: none;
-}
-
-.card .btn-danger:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(183, 28, 28, 0.3);
-}
-
-.card .btn-warning {
-    background: linear-gradient(135deg, #f57f17, #f9a825);
-    border: none;
-    color: #fff;
-}
-
-.card .btn-warning:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 127, 23, 0.3);
-}
-
-/* --- Historial de reasignaciones --- */
-.list-group-item {
-    border-left: none;
-    border-right: none;
-}
-
-.list-group-item:first-child {
-    border-top: none;
-}
-
-.list-group-item .text-muted {
-    font-size: 0.75rem;
-}
-
-/* --- Modal de cierre --- */
-#cerrarModal .modal-header {
-    background: linear-gradient(135deg, #b71c1c, #c62828);
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .card .btn {
-        font-size: 0.85rem;
-        padding: 0.4rem 0.8rem;
-    }
+.tp-timeline-item:last-child { 
+    border-bottom: none;
+    padding-bottom: 0;
 }

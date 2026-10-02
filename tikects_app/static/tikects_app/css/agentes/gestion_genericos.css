@@ -1,42 +1,14 @@
 /* ============================================
    ESTILOS DE AGENTES GENÉRICOS
    ============================================ */
-
-/* --- Tabla de asignaciones --- */
-.table .badge.bg-info {
-    font-size: 0.7rem;
-    padding: 0.3rem 0.6rem;
+.tp-empty-state {
+    padding: var(--tp-sp-64) var(--tp-sp-24);
+    text-align: center;
+    background-color: var(--tp-surface);
 }
-
-.table .text-muted {
-    font-size: 0.85rem;
-}
-
-.table .btn-danger {
-    opacity: 0.6;
-    transition: opacity 0.2s ease;
-}
-
-.table tr:hover .btn-danger {
-    opacity: 1;
-}
-
-/* --- Modal de creación --- */
-#modalAgenteGenerico .modal-header {
-    background: linear-gradient(135deg, #2e7d32, #388e3c);
-}
-
-#modalAgenteGenerico .form-select {
-    font-size: 0.9rem;
-}
-
-#modalAgenteGenerico .text-muted {
-    font-size: 0.8rem;
-}
-
-/* --- Responsive --- */
-@media (max-width: 768px) {
-    .table .btn-danger {
-        opacity: 1;
-    }
+.tp-empty-state i {
+    font-size: 3rem;
+    color: var(--tp-ink-ter);
+    opacity: 0.5;
+    margin-bottom: var(--tp-sp-16);
 }

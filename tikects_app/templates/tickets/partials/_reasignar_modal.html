@@ -1,0 +1,32 @@
+<div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+    <h5 class="modal-title tp-h3 m-0"><i class="fas fa-exchange-alt me-2"></i> Reasignar Caso #{{ tikect.id }}</h5>
+    <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+</div>
+<form id="formReasignarAjax" action="{% url 'api_reasignar_ticket' tikect.id %}" method="POST" class="ajax-form">
+    {% csrf_token %}
+    <div class="modal-body p-4">
+        <div class="mb-4">
+            <h4 class="tp-h3 mb-1">{{ tikect.titulo }}</h4>
+            <p class="tp-caption text-dark mb-0">{{ tikect.servicio.nombre }} &mdash; Requirente: {{ tikect.usuario.username }}</p>
+        </div>
+        
+        <div class="mb-4">
+            <label class="form-label tp-caption text-uppercase fw-bold">Analista Destino <span class="text-danger">*</span></label>
+            <select class="form-select tp-input" name="nuevo_agente" required>
+                <option value="" disabled selected>-- Seleccione especialista disponible --</option>
+                {% for agente in agentes_grupo %}
+                    <option value="{{ agente.id }}">{{ agente.nombre }} {{ agente.apellido }} ({{ agente.usuario.username }})</option>
+                {% endfor %}
+            </select>
+        </div>
+        
+        <div class="p-3" style="background-color: var(--tp-warning-bg); border: 1px solid var(--tp-warning-border); border-left: 3px solid var(--tp-warning-dot); border-radius: var(--tp-rad-md); color: var(--tp-warning-text);">
+            <p class="tp-caption fw-bold text-uppercase mb-1"><i class="fas fa-info-circle me-1"></i> Auditoría</p>
+            <span class="tp-body" style="font-size: 0.85rem; color: inherit;">La transferencia generará una traza permanente en la bitácora del sistema.</span>
+        </div>
+    </div>
+    <div class="modal-footer border-top-0 px-4 pb-4">
+        <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+        <button type="submit" class="btn btn-primary">Ejecutar Transferencia</button>
+    </div>
+</form>

@@ -1,99 +1,121 @@
 {% extends 'inicio de sesion/base.html' %}
 {% load static %}
 
-{% block title %}Inicio de Sesión | TickPro 2.0{% endblock %}
+{% block title %}Acceso Institucional | TickPro 2.0{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/inicio de sesion/inicio_sesion.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/inicio de sesion/inicio_sesion.css' %}?v=6">
 {% endblock %}
 
-{% block content %}
-<div class="container mt-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6 col-lg-5">
-            <div class="card shadow-lg border-0">
-                <div class="card-header bg-primary text-white text-center py-4">
-                    <i class="fas fa-ticket-alt fa-3x mb-3"></i>
-                    <h3 class="mb-0">TickPro 2.0</h3>
-                    <p class="mb-0">Portal de Acceso General</p>
-                </div>
-                <div class="card-body p-5">
-                    <h4 class="text-center mb-4">
-                        <i class="fas fa-user-circle me-2"></i>Bienvenidos
-                    </h4>
-                    
-                    {% if error %}
-                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            {{ error }}
-                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                        </div>
-                    {% endif %}
+<!-- BLOQUES VACÍOS PARA OCULTAR NAVBAR Y FOOTER EN EL LOGIN -->
+{% block navbar %}{% endblock %}
+{% block footer %}{% endblock %}
 
+{% block content %}
+<!-- Contenedor reseteado sin la clase que generaba el margen negativo -->
+<div class="container-fluid p-0">
+    <div class="row g-0 min-vh-100">
+        
+        <!-- Columna Izquierda (Branding en Azul) -->
+        <!-- Centramos el contenido de la columna igual que en la derecha -->
+        <div class="col-lg-5 d-none d-lg-flex align-items-center justify-content-center branding-side">
+            
+            <!-- Nueva caja contenedora de 420px idéntica a la del formulario para garantizar simetría -->
+            <div class="w-100 px-4 d-flex flex-column justify-content-between h-100 py-5" style="max-width: 420px;">
+                
+                <div class="mt-2">
+                    <div class="tp-eyebrow" style="color: var(--tp-navbar-text);">SISTEMA DE GESTIÓN</div>
+                </div>
+                
+                <div>
+                    <h1 class="tp-display" style="color: var(--tp-navbar-text);">TickPro 2.0</h1>
+                    <p class="tp-body mt-3" style="color: rgba(255, 255, 255, 0.8); font-weight: 400;">
+                        Portal oficial de gestión operativa, seguimiento de incidencias y soporte técnico.
+                    </p>
+                </div>
+                
+                <div class="tp-caption mb-2" style="color: rgba(255, 255, 255, 0.7);">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="tp-indicator" style="background-color: currentColor;"></div>
+                        División de Tecnología e Infraestructura
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Columna Derecha (Formulario Limpio) -->
+        <div class="col-lg-7 d-flex align-items-center justify-content-center bg-white position-relative">
+            
+            <!-- Ruido/Textura hiper sutil de fondo -->
+            <div class="tp-bg-texture"></div>
+
+            <div class="w-100 px-4 position-relative" style="max-width: 420px; z-index: 2;">
+                
+                <div class="d-lg-none mb-5">
+                    <div class="tp-eyebrow">EMVEPRO</div>
+                    <h2 class="tp-h1">TickPro 2.0</h2>
+                </div>
+
+                <div class="mb-5">
+                    <div class="tp-eyebrow">Autenticación Requerida</div>
+                    <h3 class="tp-h2 mb-2">Iniciar Sesión</h3>
+                    <p class="tp-body">Ingrese sus credenciales de directorio institucional para continuar.</p>
+                </div>
+                
+                {% if error %}
+                    <div class="alert alert-danger tp-alert py-3 mb-4 d-flex align-items-center" role="alert">
+                        <i class="fas fa-exclamation-circle text-danger me-2"></i>
+                        <span class="tp-caption text-danger fw-bold">{{ error }}</span>
+                    </div>
+                {% endif %}
+
+                <!-- Formulario en contenedor con hairline para separación -->
+                <div class="tp-form-container p-4">
                     <form method="POST" id="loginForm">
                         {% csrf_token %}
                         
                         <div class="mb-4">
-                            <label for="username" class="form-label">
-                                <i class="fas fa-user me-2"></i>Usuario
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-user"></i></span>
-                                <input type="text" class="form-control" id="username" name="username" 
-                                       placeholder="Ingrese su usuario" required autofocus>
+                            <label for="username" class="form-label tp-caption text-uppercase" style="letter-spacing: 0.05em;">Identificador</label>
+                            <input type="text" class="form-control tp-input" id="username" name="username" required autofocus>
+                        </div>
+
+                        <div class="mb-4 position-relative">
+                            <div class="d-flex justify-content-between">
+                                <label for="clave" class="form-label tp-caption text-uppercase" style="letter-spacing: 0.05em;">Contraseña</label>
                             </div>
-                        </div>
-
-                        <div class="mb-3">
-                            <label for="clave" class="form-label">
-                                <i class="fas fa-lock me-2"></i>Contraseña
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text"><i class="fas fa-lock"></i></span>
-                                <input type="password" class="form-control" id="clave" name="clave" 
-                                       placeholder="Ingrese su contraseña" required>
-                                <button class="btn btn-outline-secondary" type="button" id="togglePassword">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </div>
-                        </div>
-
-                        <div class="text-end mb-4">
-                            <a href="{% url 'password_reset' %}" class="text-decoration-none small fw-bold text-primary">
-                                ¿Olvidaste tu contraseña?
-                            </a>
-                        </div>
-
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-primary btn-lg" id="submitButton">
-                                <span id="buttonText">
-                                    <i class="fas fa-sign-in-alt me-2"></i> Ingresar
-                                </span>
-                                <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none" role="status"></span>
+                            <input type="password" class="form-control tp-input pe-5" id="clave" name="clave" required>
+                            <button class="btn btn-link text-muted position-absolute end-0 bottom-0 mb-1 me-1 text-decoration-none shadow-none" type="button" id="togglePassword">
+                                <i class="fas fa-eye" style="font-size: 0.85rem;"></i>
                             </button>
                         </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-5 mt-2">
+                            <div class="form-check d-flex align-items-center gap-2">
+                                <input class="form-check-input tp-checkbox" type="checkbox" id="rememberMe">
+                                <label class="form-check-label tp-caption mt-1" for="rememberMe">Mantener sesión</label>
+                            </div>
+                            <a href="{% url 'password_reset' %}" class="tp-caption text-decoration-none fw-semibold" style="color: var(--tp-accent);">Restablecer acceso</a>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary w-100 py-3 d-flex justify-content-center align-items-center" id="submitButton">
+                            <span id="buttonText" class="fw-semibold">Acceder al Panel</span>
+                            <span id="loadingSpinner" class="spinner-border spinner-border-sm d-none ms-2" role="status"></span>
+                        </button>
                     </form>
-
-                    <hr class="my-4">
-
-                    <div class="text-center">
-                        <p class="mb-2 text-muted">¿Eres nuevo en la institución?</p>
-                        <a href="#" class="btn btn-outline-secondary btn-sm">
-                            <i class="fas fa-user-plus me-2"></i> Solicitar acceso a soporte
-                        </a>
-                    </div>
                 </div>
-                <div class="card-footer text-center py-3">
-                    <small class="text-muted">
-                        © {% now "Y" %} TickPro - EMVEPRO
-                    </small>
+                
+                <!-- Separador con texto centrado -->
+                <div class="tp-separator mt-5 mb-4">
+                    <span>Soporte</span>
                 </div>
+                
+                <p class="text-center tp-caption text-muted">
+                    ¿Problemas técnicos? Contacte a la mesa de ayuda.
+                </p>
+
             </div>
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'tikects_app/js/inicio de sesion/inicio_sesion.js' %}?v=3"></script>
 {% endblock %}

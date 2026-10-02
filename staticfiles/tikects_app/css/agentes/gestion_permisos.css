@@ -1,0 +1,46 @@
+/* ============================================
+   ESTILOS DE GESTIÓN DE PERMISOS
+   ============================================ */
+
+/* --- Paneles --- */
+.card .card-header {
+    border-radius: 12px 12px 0 0 !important;
+}
+
+.card .table {
+    font-size: 0.85rem;
+}
+
+.card .table td {
+    vertical-align: middle;
+}
+
+/* --- Badges de permisos --- */
+.badge.bg-danger {
+    background: linear-gradient(135deg, #b71c1c, #c62828) !important;
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #f57f17, #f9a825) !important;
+}
+
+.badge.bg-info {
+    background: linear-gradient(135deg, #00695c, #00897b) !important;
+}
+
+/* --- Leyenda --- */
+.card.bg-secondary .card-header {
+    background: #6c757d !important;
+}
+
+/* --- Responsive --- */
+@media (max-width: 768px) {
+    .card .table {
+        font-size: 0.75rem;
+    }
+    
+    .card .table .badge {
+        font-size: 0.6rem;
+        padding: 0.2rem 0.4rem;
+    }
+}

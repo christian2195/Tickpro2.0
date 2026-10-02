@@ -4,47 +4,37 @@
 {% block title %}Todos los Tickets {% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_ver_todos.css' %}?v=3">
+    <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_ver_todos.css' %}?v=4">
 {% endblock %}
 
 {% block content %}
 <!-- Encabezado de página -->
-<div class="page-header">
-    <div class="container">
-        <div class="d-flex justify-content-between align-items-center">
-            <h1>
-                <i class="fas fa-ticket-alt me-3"></i> TODOS LOS TICKETS
-            </h1>
-            <nav aria-label="breadcrumb">
-                <ol class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
-                    <li class="breadcrumb-item active">Todos los Tickets</li>
-                </ol>
-            </nav>
-        </div>
+<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+    <div>
+        <h1 class="tp-h2 m-0">Explorador de Tickets</h1>
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mt-2">
+                <li class="breadcrumb-item"><a href="{% url 'pagina_principal' %}">Inicio</a></li>
+                <li class="breadcrumb-item active">Todos los Tickets</li>
+            </ol>
+        </nav>
     </div>
 </div>
 
-<div class="container">
+<div class="container-fluid p-0">
     <!-- Filtros y búsqueda -->
-    <div class="row mb-4">
+    <div class="row mb-5 align-items-center g-3">
         <div class="col-md-8">
-            <div class="btn-group" role="group">
-                <a href="{% url 'ver_tikects' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects' %}btn-primary{% else %}btn-outline-primary{% endif %}">
-                    <i class="fas fa-list me-2"></i> Todos
-                </a>
-                <a href="{% url 'ver_tikects_abiertos' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_abiertos' %}btn-success{% else %}btn-outline-success{% endif %}">
-                    <i class="fas fa-folder-open me-2"></i> Abiertos
-                </a>
-                <a href="{% url 'ver_tikects_cerrados' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_cerrados' %}btn-danger{% else %}btn-outline-danger{% endif %}">
-                    <i class="fas fa-check-circle me-2"></i> Cerrados
-                </a>
+            <div class="tp-filter-group d-flex flex-wrap">
+                <a href="{% url 'ver_tikects' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects' %}active{% endif %}">Todos</a>
+                <a href="{% url 'ver_tikects_abiertos' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_abiertos' %}active{% endif %}">Abiertos</a>
+                <a href="{% url 'ver_tikects_cerrados' %}" class="btn {% if request.resolver_match.url_name == 'ver_tikects_cerrados' %}active{% endif %}">Cerrados</a>
             </div>
         </div>
         <div class="col-md-4">
             <div class="input-group">
-                <input type="text" class="form-control" placeholder="Buscar tickets..." id="searchInput">
-                <button class="btn btn-primary" type="button" id="searchButton">
+                <input type="text" class="form-control tp-search-input shadow-none" placeholder="Buscar ticket..." id="searchInput">
+                <button class="btn tp-search-btn shadow-none" type="button" id="searchButton">
                     <i class="fas fa-search"></i>
                 </button>
             </div>
@@ -52,167 +42,199 @@
     </div>
 
     <!-- Estadísticas rápidas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card text-white bg-primary">
-                <div class="card-body">
-                    <h6 class="card-title">Total Tickets</h6>
-                    <h3 class="mb-0">{{ tikects.paginator.count }}</h3>
-                </div>
+    <div class="row g-4 mb-5 pb-2">
+        <div class="col-6 col-md-3">
+            <div class="tp-stat-block tp-border-accent">
+                <span class="tp-stat-label">Total Sistema</span>
+                <span class="tp-stat-value">{{ tikects.paginator.count }}</span>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-success">
-                <div class="card-body">
-                    <h6 class="card-title">Abiertos</h6>
-                    <h3 class="mb-0">{{ tikects_abiertos|default:"0" }}</h3>
-                </div>
+        <div class="col-6 col-md-3">
+            <div class="tp-stat-block tp-border-success">
+                <span class="tp-stat-label text-success">Abiertos</span>
+                <span class="tp-stat-value">{{ tikects_abiertos|default:"0" }}</span>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-danger">
-                <div class="card-body">
-                    <h6 class="card-title">Cerrados</h6>
-                    <h3 class="mb-0">{{ tikects_cerrados|default:"0" }}</h3>
-                </div>
+        <div class="col-6 col-md-3">
+            <div class="tp-stat-block tp-border-danger">
+                <span class="tp-stat-label text-danger">Cerrados</span>
+                <span class="tp-stat-value">{{ tikects_cerrados|default:"0" }}</span>
             </div>
         </div>
-        <div class="col-md-3">
-            <div class="card text-white bg-info">
-                <div class="card-body">
-                    <h6 class="card-title">Reasignados</h6>
-                    <h3 class="mb-0">{{ tikects_reasignados|default:"0" }}</h3>
-                </div>
+        <div class="col-6 col-md-3">
+            <div class="tp-stat-block tp-border-info">
+                <span class="tp-stat-label" style="color: var(--tp-info-text);">Reasignados</span>
+                <span class="tp-stat-value">{{ tikects_reasignados|default:"0" }}</span>
             </div>
         </div>
     </div>
 
-    <!-- Tabla de tickets -->
-    <div class="card">
-        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-            <h5 class="mb-0"><i class="fas fa-list me-2"></i> Listado de Tickets</h5>
-            <span class="badge bg-light text-dark">Página {{ tikects.number }} de {{ tikects.paginator.num_pages }}</span>
+    <!-- Contenedor Tabla -->
+    <!-- Contenedor Tabla -->
+    <div class="tp-table-container mb-4">
+        <div class="d-flex justify-content-between align-items-center p-4 bg-white border-bottom" style="border-color: var(--tp-border-strong);">
+            <div class="tp-eyebrow m-0">Registro Completo</div>
+            
+            <!-- Grupo derecho: Paginador + Botón Crear -->
+            <div class="d-flex align-items-center gap-4">
+                <span class="tp-caption d-none d-md-inline">Pág. {{ tikects.number }} de {{ tikects.paginator.num_pages }}</span>
+                <button type="button" class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalCrearTicket">
+                    <i class="fas fa-plus me-2" style="font-size: 0.75rem;"></i>Crear Ticket
+                </button>
+            </div>
         </div>
-        <div class="card-body">
-            {% if tikects %}
-                <div class="table-responsive">
-                    <table class="table table-hover" id="ticketsTable">
-                        <thead>
-                            <tr>
-                                <th>ID</th>
-                                <th>Fecha</th>
-                                <th>Título</th>
-                                <th>Cliente</th>
-                                <th>Gerencia</th>
-                                <th>Servicio</th>
-                                <th>Estado</th>
-                                <th>Reasignado</th>
-                                <th>Acciones</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {% for tikect in tikects %}
-                            <tr>
-                                <td><strong>#{{ tikect.id }}</strong></td>
-                                <td>
-                                    <small>{{ tikect.fecha_creacion|date:"d/m/Y" }}</small>
-                                    <br>
-                                    <small class="text-muted">{{ tikect.fecha_creacion|date:"h:i A" }}</small>
-                                </td>
-                                <td>
-                                    <a href="{% url 'detalle_tikect' tikect.id %}" class="text-decoration-none fw-bold">
-                                        {{ tikect.titulo|truncatechars:40 }}
+        
+        {% if tikects %}
+            <div class="table-responsive">
+                <table class="table" id="ticketsTable">
+                    <thead>
+                        <tr>
+                            <th style="width: 5%;">ID</th>
+                            <th style="width: 10%;">Fecha</th>
+                            <th style="width: 25%;">Título</th>
+                            <th style="width: 15%;">Cliente</th>
+                            <th style="width: 15%;">Gerencia</th>
+                            <th style="width: 10%;">Servicio</th>
+                            <th style="width: 5%;">Estado</th>
+                            <th style="width: 5%;" class="text-center">Reasig.</th>
+                            <!-- Aumentamos el ancho para que quepan los 3 botones -->
+                            <th style="width: 10%;" class="text-end">Acción</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for tikect in tikects %}
+                        <tr class="tp-table-row">
+                            <td class="tp-caption fw-bold">#{{ tikect.id }}</td>
+                            <td>
+                                <div class="tp-caption text-dark">{{ tikect.fecha_creacion|date:"d/m/Y" }}</div>
+                                <div class="tp-caption" style="font-size: 0.75rem;">{{ tikect.fecha_creacion|date:"h:i A" }}</div>
+                            </td>
+                            <td>
+                                <a href="{% url 'detalle_tikect' tikect.id %}" class="tp-action-link text-dark fw-bold btn-detalle-modal" data-id="{{ tikect.id }}">
+                                    {{ tikect.titulo|truncatechars:40 }}
+                                </a>
+                            </td>
+                            <td class="tp-body">{{ tikect.usuario.username }}</td>
+                            <td class="tp-caption">{{ tikect.cliente.gerencia.nombre|default:"Sin asignar"|truncatechars:20 }}</td>                           
+                            <td class="tp-caption">{{ tikect.servicio.nombre }}</td>
+                            <td>
+                                {% if tikect.estado == 'cerrado' %}
+                                    <span class="tp-badge danger">CERRADO</span>
+                                {% else %}
+                                    <span class="tp-badge success">ABIERTO</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if tikect.id in reasignados_ids %}
+                                    <span class="tp-badge info px-2 py-1"><i class="fas fa-exchange-alt"></i></span>
+                                {% else %}
+                                    <span class="tp-caption">-</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a href="{% url 'detalle_tikect' tikect.id %}" class="tp-action-btn btn-detalle-modal" data-id="{{ tikect.id }}" title="Ver detalles">
+                                        <i class="fas fa-eye"></i>
                                     </a>
-                                </td>
-                                <td>{{ tikect.usuario.username }}</td>
-                                <td>{{ tikect.gerencia|truncatechars:20 }}</td>
-                                <td>{{ tikect.servicio.nombre }}</td>
-                                <td>
-                                    {% if tikect.estado == 'cerrado' %}
-                                        <span class="badge bg-danger">Cerrado</span>
-                                    {% else %}
-                                        <span class="badge bg-success">Abierto</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if tikect.id in reasignados_ids %}
-                                        <span class="badge bg-info" data-bs-toggle="tooltip" title="Reasignado">
-                                            <i class="fas fa-exchange-alt me-1"></i> Sí
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary">No</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    <div class="btn-group btn-group-sm">
-                                        <a href="{% url 'detalle_tikect' tikect.id %}" class="btn btn-primary" 
-                                           data-bs-toggle="tooltip" title="Ver detalles">
-                                            <i class="fas fa-eye"></i>
+                                    
+                                    {% if not tikect.cerrado and request.user.is_superuser %}
+                                        <a href="{% url 'reasignar_tikect' tikect.id %}" class="tp-action-btn warning btn-reasignar-modal" data-id="{{ tikect.id }}" title="Reasignar">
+                                            <i class="fas fa-exchange-alt"></i>
                                         </a>
-                                        {% if not tikect.cerrado and request.user.is_superuser %}
-                                            <a href="{% url 'reasignar_tikect' tikect.id %}" class="btn btn-warning"
-                                               data-bs-toggle="tooltip" title="Reasignar">
-                                                <i class="fas fa-exchange-alt"></i>
-                                            </a>
-                                        {% endif %}
+                                        
+                                        <!-- BOTÓN DE CERRAR/RESOLVER -->
+                                        <button type="button" class="tp-action-btn success" data-bs-toggle="modal" data-bs-target="#cerrarModal{{ tikect.id }}" title="Resolver">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+
+                        <!-- MODAL DE CIERRE DE TICKET (Incrustado por fila) -->
+                        {% if not tikect.cerrado and request.user.is_superuser %}
+                        <div class="modal fade" id="cerrarModal{{ tikect.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+                                    <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="modal-title tp-h3 m-0">Resolución de Ticket #{{ tikect.id }}</h5>
+                                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
                                     </div>
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Paginación -->
-                {% if tikects.paginator.num_pages > 1 %}
-                <nav class="mt-4">
-                    <ul class="pagination justify-content-center">
-                        {% if tikects.has_previous %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ tikects.previous_page_number }}">
-                                    <i class="fas fa-chevron-left"></i>
-                                </a>
-                            </li>
+                                    <form method="post" action="{% url 'cerrar_tikect' tikect.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body p-4 text-start">
+                                            <div class="mb-3">
+                                                <label for="solucion{{ tikect.id }}" class="form-label tp-caption text-uppercase fw-bold">Memoria Técnica del Cierre <span class="text-danger">*</span></label>
+                                                <textarea class="form-control" style="border: 1px solid var(--tp-border-strong); border-radius: var(--tp-rad-md);" id="solucion{{ tikect.id }}" name="descripcion_solucion" rows="4" placeholder="Documente la acción definitiva tomada para el archivo técnico..." required></textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer border-top-0 px-4 pb-4">
+                                            <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
+                                            <button type="submit" class="btn btn-primary">Procesar Cierre</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
                         {% endif %}
-
-                        {% for i in tikects.paginator.page_range %}
-                            {% if tikects.number == i %}
-                                <li class="page-item active">
-                                    <span class="page-link">{{ i }}</span>
-                                </li>
-                            {% elif i > tikects.number|add:'-3' and i < tikects.number|add:'3' %}
-                                <li class="page-item">
-                                    <a class="page-link" href="?page={{ i }}">{{ i }}</a>
-                                </li>
-                            {% endif %}
                         {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="text-center py-5 bg-white">
+                <i class="fas fa-ticket-alt fa-3x text-muted mb-3 opacity-50"></i>
+                <h5 class="tp-h3">No hay tickets disponibles</h5>
+                <p class="tp-body mb-4">Los tickets que se creen aparecerán en esta lista.</p>
+                <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalCrearTicket">
+                    <i class="fas fa-plus me-2"></i> Crear Ticket
+                </button>
+            </div>
+        {% endif %}
+    </div>
 
-                        {% if tikects.has_next %}
-                            <li class="page-item">
-                                <a class="page-link" href="?page={{ tikects.next_page_number }}">
-                                    <i class="fas fa-chevron-right"></i>
-                                </a>
-                            </li>
-                        {% endif %}
-                    </ul>
-                </nav>
-                {% endif %}
-
-            {% else %}
-                <div class="text-center py-5">
-                    <i class="fas fa-ticket-alt fa-4x text-muted mb-3"></i>
-                    <h5 class="text-muted">No hay tickets disponibles</h5>
-                    <p class="text-muted mb-3">Los tickets que se creen aparecerán aquí.</p>
-                    <a href="{% url 'crear_tikects' %}" class="btn btn-primary">
-                        <i class="fas fa-plus-circle me-2"></i> Crear primer ticket
-                    </a>
-                </div>
+    <!-- Paginación -->
+    {% if tikects.paginator.num_pages > 1 %}
+    <nav class="mt-4 pb-5">
+        <ul class="pagination justify-content-center tp-pagination">
+            {% if tikects.has_previous %}
+                <li class="page-item">
+                    <a class="page-link shadow-none" href="?page={{ tikects.previous_page_number }}"><i class="fas fa-chevron-left"></i></a>
+                </li>
             {% endif %}
+
+            {% for i in tikects.paginator.page_range %}
+                {% if tikects.number == i %}
+                    <li class="page-item active"><span class="page-link shadow-none">{{ i }}</span></li>
+                {% elif i > tikects.number|add:'-3' and i < tikects.number|add:'3' %}
+                    <li class="page-item"><a class="page-link shadow-none" href="?page={{ i }}">{{ i }}</a></li>
+                {% endif %}
+            {% endfor %}
+
+            {% if tikects.has_next %}
+                <li class="page-item">
+                    <a class="page-link shadow-none" href="?page={{ tikects.next_page_number }}"><i class="fas fa-chevron-right"></i></a>
+                </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<!-- Contenedor inyector para Fetch API -->
+<div class="modal fade" id="dynamicTicketModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            <!-- El contenido se inyecta aquí -->
         </div>
     </div>
 </div>
+
+<!-- Modal estático de Creación -->
+{% include 'tickets/partials/_crear_modal.html' %}
 {% endblock %}
 
 {% block extra_js %}
     <script src="{% static 'tikects_app/js/tickets/tikects_ver_todos.js' %}?v=3"></script>
+    <script src="{% static 'tikects_app/js/tickets/tickets_modales.js' %}?v=1"></script>
 {% endblock %}

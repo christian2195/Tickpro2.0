@@ -57,28 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ==========================================
-    // 3. GRÁFICO: Tickets por Prioridad (Doughnut)
-    // ==========================================
-    const prioridadCtx = document.getElementById('prioridadChart');
-    if (prioridadCtx) {
-        const prioridadData = JSON.parse(prioridadCtx.dataset.data || '{"labels":[],"data":[]}');
-        new Chart(prioridadCtx, {
-            type: 'doughnut',
-            data: {
-                labels: prioridadData.labels || [],
-                datasets: [{
-                    data: prioridadData.data || [],
-                    backgroundColor: ['#17a2b8', '#ffc107', '#fd7e14', '#dc3545', '#6c757d']
-                }]
-            },
-            options: {
-                responsive: true,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    }
-
-    // ==========================================
     // 4. GRÁFICO: Tickets Cerrados por Día (Línea)
     // ==========================================
     const diaCtx = document.getElementById('tikectsPorDiaCerradosChart');

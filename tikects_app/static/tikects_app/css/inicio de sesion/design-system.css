@@ -1,0 +1,130 @@
+/* ============================================
+   TICKPRO DESIGN SYSTEM - VARIABLES Y CLASES BASE
+   ============================================ */
+
+:root {
+    --tp-bg-base: #F7F9FC; 
+    --tp-surface: #FFFFFF; 
+    --tp-surface-alt: #F1F5F9; 
+    
+    --tp-navbar-bg: #1E40AF; 
+    --tp-navbar-text: #FFFFFF; 
+    
+    --tp-ink: #0F172A;
+    --tp-ink-sec: #475569;
+    --tp-ink-ter: #94A3B8;
+    
+    /* Acentos (Táctil) */
+    --tp-accent: #2563EB; 
+    --tp-accent-hover: #1E40AF; 
+    --tp-accent-active: #1E3A8A; /* Color de hundimiento */
+    --tp-accent-soft: #DBEAFE;
+    
+    --tp-border: rgba(30, 41, 59, 0.14);        
+    --tp-border-strong: rgba(30, 41, 59, 0.22); 
+    --tp-border-light: rgba(15, 23, 42, 0.08); 
+    --tp-border-dark: rgba(15, 23, 42, 0.15);
+    
+    /* Estados Semánticos Base (Textos y Fondos suaves) */
+    --tp-success-bg: #DCFCE7; --tp-success-text: #15803D; --tp-success-border: #86EFAC; 
+    --tp-warning-bg: #FEF3C7; --tp-warning-text: #B45309; --tp-warning-border: #FCD34D; 
+    --tp-danger-bg: #FEE2E2; --tp-danger-text: #B91C1C; --tp-danger-border: #FCA5A5; 
+    --tp-info-bg: #DBEAFE;    --tp-info-text: #1D4ED8; --tp-info-border: #93C5FD; 
+
+    /* Estados Semánticos Sólidos (Botones e Iconos) */
+    --tp-success-dot: #16A34A; --tp-success-hover: #15803D; --tp-success-active: #166534;
+    --tp-warning-dot: #D97706; --tp-warning-hover: #B45309; --tp-warning-active: #92400E;
+    --tp-danger-dot: #DC2626;  --tp-danger-hover: #B91C1C;  --tp-danger-active: #991B1B;
+    --tp-info-dot: #0EA5E9;    --tp-info-hover: #0284C7;    --tp-info-active: #0369A1;
+
+    --tp-font: 'Inter', sans-serif;
+    --tp-sp-4: 0.25rem; --tp-sp-8: 0.5rem; --tp-sp-12: 0.75rem; 
+    --tp-sp-16: 1rem; --tp-sp-24: 1.5rem; --tp-sp-32: 2rem;
+    --tp-sp-48: 3rem; --tp-sp-64: 4rem; --tp-sp-96: 6rem;
+    
+    --tp-rad-sm: 4px; --tp-rad-md: 6px; --tp-rad-lg: 8px;
+    --tp-trans: 0.2s cubic-bezier(0.2, 0.8, 0.2, 1); /* Transición ligeramente más rápida para botones */
+}
+
+/* ============================================
+   UTILIDADES TIPOGRÁFICAS
+   ============================================ */
+.tp-display { font-size: 3.5rem; font-weight: 800; letter-spacing: -0.04em; line-height: 1.1; color: var(--tp-ink); }
+.tp-h1 { font-size: 2.25rem; font-weight: 700; letter-spacing: -0.03em; color: var(--tp-ink); }
+.tp-h2 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; color: var(--tp-ink); }
+.tp-h3 { font-size: 1.125rem; font-weight: 600; color: var(--tp-ink); }
+
+.tp-eyebrow {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--tp-ink-sec);
+    display: flex;
+    align-items: center;
+    gap: var(--tp-sp-8);
+    margin-bottom: var(--tp-sp-8);
+}
+.tp-eyebrow::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 1px;
+    background-color: var(--tp-border-strong); /* Borde más visible */
+}
+
+.tp-body { font-size: 1rem; font-weight: 300; color: var(--tp-ink-sec); line-height: 1.6; }
+.tp-caption { font-size: 0.875rem; font-weight: 500; color: var(--tp-ink-ter); }
+
+.tp-indicator {
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    background-color: var(--tp-accent);
+    margin-right: var(--tp-sp-8);
+    border-radius: 1px;
+}
+
+/* ============================================
+   BLOQUES ESTADÍSTICOS (GLOBALES)
+   ============================================ */
+.tp-stat-block {
+    background-color: var(--tp-surface);
+    border: 1px solid var(--tp-border-strong);
+    border-radius: var(--tp-rad-lg);
+    padding: var(--tp-sp-24);
+    border-top: 3px solid var(--tp-border-dark);
+    display: flex;
+    flex-direction: column;
+    transition: all var(--tp-trans);
+}
+
+.tp-stat-block:hover {
+    border-color: var(--tp-border-dark);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(15, 23, 42, 0.03);
+}
+
+.tp-stat-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--tp-ink-sec);
+    margin-bottom: var(--tp-sp-12);
+}
+
+.tp-stat-value {
+    font-size: 3.5rem;
+    font-weight: 800;
+    color: var(--tp-ink);
+    line-height: 1;
+    letter-spacing: -0.04em;
+}
+
+/* Modificadores de color superior */
+.tp-stat-block.tp-border-accent { border-top-color: var(--tp-accent); }
+.tp-stat-block.tp-border-success { border-top-color: var(--tp-success-dot); }
+.tp-stat-block.tp-border-warning { border-top-color: var(--tp-warning-dot); }
+.tp-stat-block.tp-border-danger { border-top-color: var(--tp-danger-dot); }
+.tp-stat-block.tp-border-info { border-top-color: var(--tp-info-dot); }
