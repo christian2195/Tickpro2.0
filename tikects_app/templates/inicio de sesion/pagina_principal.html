@@ -1,7 +1,7 @@
 {% extends 'inicio de sesion/base.html' %}
 {% load static %}
 
-{% block title %}Dashboard | TickPro 2.0{% endblock %}
+{% block title %}TickPro 2.0{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'tikects_app/css/inicio de sesion/pagina_principal.css' %}?v=7">
@@ -102,11 +102,6 @@
         <div>
             <h2 class="tp-h2 m-0">{% if request.user.is_superuser or request.user.agente %}Actividad Reciente{% else %}Mis Últimos Tickets{% endif %}</h2>
         </div>
-        {% if not request.user.is_superuser and not request.user.agente %}
-            <a href="{% url 'crear_tikects_clientes' %}" class="btn btn-primary btn-sm px-3">
-                <i class="fas fa-plus me-2" style="font-size: 0.75rem;"></i>Nuevo Ticket
-            </a>
-        {% endif %}
     </div>
     
     <div class="tp-table-container">

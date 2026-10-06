@@ -49,6 +49,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'tikects_app.context_processors.apariencia_global',
             ],
         },
     },
@@ -100,3 +101,6 @@ SITE_ID = 1 # Necesario porque tienes 'django.contrib.sites' en INSTALLED_APPS
 LOGIN_URL = 'login'
 LOGIN_REDIRECT_URL = 'pagina_principal'
 LOGOUT_REDIRECT_URL = 'login'
+
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

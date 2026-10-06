@@ -4,7 +4,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}EMVEPRO - Tickpro 2.0{% endblock %}</title>
+    <title>{% block title %}Tickpro 2.0{% endblock %}</title>
+    
+    <!-- FAVICON DINÁMICO -->
+    {% if apariencia and apariencia.icono_sistema %}
+        <link rel="icon" href="{{ apariencia.icono_sistema.url }}">
+        <link rel="shortcut icon" href="{{ apariencia.icono_sistema.url }}">
+    {% endif %}
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -27,6 +33,7 @@
             {% else %}
                 <a class="navbar-brand d-flex align-items-center" href="{% url 'login' %}">
             {% endif %}
+                <!-- Dejamos el indicador original -->
                 <div class="tp-indicator"></div>
                 <span class="fw-bold d-none d-sm-block">Tickpro 2.0</span>
             </a>
@@ -44,11 +51,10 @@
                             <li class="nav-item ms-lg-3 ps-lg-3 border-start" style="border-color: rgba(255, 255, 255, 0.2) !important;">
                                 <a class="nav-link" href="{% url 'configuracion' %}">Admin</a>
                             </li>
-                        {% elif user.agente %}
+                        {% elif user.agente or user.agentes %}
                             <!-- Menú para Agentes Operativos -->
                             <li class="nav-item"><a class="nav-link" href="{% url 'pagina_principal' %}">Inicio</a></li>
                             <li class="nav-item"><a class="nav-link" href="{% url 'ver_tikects_asignados_agentes' %}">Mis Tickets</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{% url 'estadisticas' %}">Estadísticas</a></li>
                         {% else %}
                             <!-- Menú para Clientes -->
                             <li class="nav-item"><a class="nav-link" href="{% url 'pagina_principal' %}">Mi Panel</a></li>
@@ -59,7 +65,7 @@
 
                 {% if user.is_authenticated %}
                 <ul class="navbar-nav align-items-center">
-                    {% if user.is_superuser or user.agente %}
+                    {% if user.is_superuser or user.agente or user.agentes %}
                     <li class="nav-item dropdown me-4">
                         <a class="nav-link position-relative dropdown-toggle no-toggle-arrow" href="#" id="notifDropdown" data-bs-toggle="dropdown">
                             <div class="tp-icon-container"><i class="fas fa-bell"></i></div>
@@ -72,7 +78,11 @@
                         <ul class="dropdown-menu dropdown-menu-end py-0 tp-dropdown" style="width: 320px;">
                             <li class="px-3 py-2 bg-light fw-bold border-bottom tp-caption text-uppercase">Notificaciones</li>
                             {% for n in notificaciones %}
-                                <li><a class="dropdown-item py-3 text-wrap border-bottom tp-body" href="{% url 'detalle_tikect' n.tikect.id %}">{{ n.descripcion }}</a></li>
+                                <li>
+                                    <a class="dropdown-item py-3 border-bottom tp-body" style="white-space: normal !important; word-break: break-all !important;" href="{% url 'detalle_tikect' n.tikect.id %}">
+                                        {{ n.descripcion }}
+                                    </a>
+                                </li>
                             {% empty %}
                                 <li class="text-center py-4 tp-caption">No hay tareas pendientes</li>
                             {% endfor %}
@@ -122,7 +132,7 @@
     {% block footer %}
     <footer class="text-center py-4 mt-auto border-top" style="border-color: var(--tp-border-light) !important;">
         <div class="container tp-caption">
-            EMVEPRO &copy; {% now "Y" %} &mdash; División de Tecnología e Infraestructura
+            &copy; {% now "Y" %} Tickpro. Todos los derechos reservados.
         </div>
     </footer>
     {% endblock footer %}
@@ -131,6 +141,93 @@
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0/dist/js/select2.min.js"></script>
     <script src="{% static 'tikects_app/js/inicio de sesion/base.js' %}?v=3"></script>
+    
+    <!-- Aquí dejamos el bloque extra_js vacío y cerrado para que las vistas hijas lo usen -->
     {% block extra_js %}{% endblock %}
+
+    <!-- AUDIO: Sonido de notificación local -->
+    <audio id="sonido-notificacion" preload="auto">
+        <source src="{% static 'tikects_app/notification.mp3' %}" type="audio/mpeg">
+    </audio>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const badgeCampana = document.querySelector('.tp-badge-notification'); 
+            const sonido = document.getElementById('sonido-notificacion');
+            const campanaLink = document.getElementById('notifDropdown');
+            let notificacionesActuales = parseInt("{{ notificaciones|length|default:0 }}");
+
+            // Función global para limpiar notificaciones
+            window.limpiarNotificaciones = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                fetch('{% url "limpiar_notificaciones" %}')
+                    .then(() => {
+                        // 1. Redibujar el menú a vacío
+                        const dropdownMenu = document.querySelector('#notifDropdown + .dropdown-menu');
+                        if (dropdownMenu) {
+                            dropdownMenu.innerHTML = '<li class="px-3 py-2 bg-light fw-bold border-bottom tp-caption text-uppercase d-flex justify-content-between align-items-center"><span>Notificaciones</span></li><li class="text-center py-4 tp-caption">No hay tareas pendientes</li>';
+                        }
+                        
+                        // 2. Destruir la burbuja buscando directamente en el DOM
+                        const burbujas = document.querySelectorAll('.tp-badge-notification');
+                        burbujas.forEach(burbuja => burbuja.remove());
+                        
+                        // 3. Reiniciar el contador a 0
+                        notificacionesActuales = 0;
+                    })
+                    .catch(error => console.log('Error limpiando notificaciones'));
+            };
+
+            function revisarNotificaciones() {
+                fetch('{% url "check_notifications" %}') 
+                    .then(response => response.json())
+                    .then(data => {
+                        // Si hay un cambio en el número (sube o baja), redibujamos el menú
+                        if (data.count !== notificacionesActuales) {
+                            
+                            // Si subió, suena la campana
+                            if (data.count > notificacionesActuales) {
+                                sonido.play().catch(() => {});
+                            }
+                            
+                            // Actualizamos la burbuja
+                            if (badgeCampana) {
+                                badgeCampana.textContent = data.count;
+                                badgeCampana.style.display = data.count > 0 ? 'inline-block' : 'none';
+                            } else if (campanaLink && data.count > 0) {
+                                const nuevaBurbuja = document.createElement('span');
+                                nuevaBurbuja.className = 'position-absolute top-0 start-100 translate-middle tp-badge-notification';
+                                nuevaBurbuja.textContent = data.count;
+                                campanaLink.appendChild(nuevaBurbuja);
+                            }
+                            
+                            // Redibujamos la lista siempre
+                            const dropdownMenu = document.querySelector('#notifDropdown + .dropdown-menu');
+                            if (dropdownMenu) {
+                                let htmlContent = `
+                                    <li class="px-3 py-2 bg-light fw-bold border-bottom tp-caption text-uppercase d-flex justify-content-between align-items-center">
+                                        <span>Notificaciones</span>
+                                        ${data.count > 0 ? '<button class="btn btn-sm text-primary p-0 text-decoration-none" style="font-size: 0.75rem;" onclick="limpiarNotificaciones(event)">Limpiar</button>' : ''}
+                                    </li>`;
+                                
+                                if (data.count > 0) {
+                                    data.notifications.forEach(n => {
+                                        htmlContent += `<li><a class="dropdown-item py-3 border-bottom tp-body" style="white-space: normal !important; word-break: break-all !important;" href="/tikects/detalle/${n.tikect_id}/">${n.descripcion}</a></li>`;
+                                    });
+                                } else {
+                                    htmlContent += '<li class="text-center py-4 tp-caption">No hay tareas pendientes</li>';
+                                }
+                                dropdownMenu.innerHTML = htmlContent;
+                            }
+                            notificacionesActuales = data.count;
+                        }
+                    })
+                    .catch(() => {});
+            }
+            setInterval(revisarNotificaciones, 10000);
+        });
+    </script>
 </body>
 </html>

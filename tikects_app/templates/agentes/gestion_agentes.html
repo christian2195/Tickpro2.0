@@ -114,11 +114,19 @@
                         </div>
                         <div class="col-md-6">
                             <label class="form-label tp-caption text-uppercase fw-bold">Correo Institucional <span class="text-danger">*</span></label>
-                            <input type="email" class="form-control tp-input" id="email" name="email" required>
+                            <input type="email" class="form-control tp-input" id="email" name="email">
                         </div>
-                        <div class="col-md-12">
-                            <label class="form-label tp-caption text-uppercase fw-bold" id="passwordLabel">Credencial de Acceso <span class="text-danger">*</span></label>
-                            <input type="password" class="form-control tp-input" id="password" name="password" placeholder="Requerido mínimo 8 caracteres alfanuméricos">
+                        <div class="col-12 mb-3">
+                            <label for="agente_password" class="form-label tp-caption text-uppercase fw-bold">
+                                Contraseña <span class="text-danger" id="agente_password_required" style="display: none;">*</span>
+                            </label>
+                            <!-- Atributo minlength añadido -->
+                            <input type="password" class="form-control tp-input" id="agente_password" name="password" minlength="8" placeholder="Estrictamente 8 caracteres mínimos">
+                            
+                            <!-- Mensaje visual de Bootstrap -->
+                            <div class="invalid-feedback">
+                                La contraseña es obligatoria y debe contener un mínimo de 8 caracteres.
+                            </div>
                         </div>
                     </div>
 

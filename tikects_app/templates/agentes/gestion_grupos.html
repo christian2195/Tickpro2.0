@@ -8,46 +8,43 @@
 {% endblock %}
 
 {% block content %}
-<div class="tp-page-header d-flex flex-column flex-md-row justify-content-between align-items-md-end">
+<div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
     <div>
-        <h1 class="tp-h2 m-0">Niveles de Soporte</h1>
-        <nav aria-label="breadcrumb">
-            <ol class="breadcrumb mt-2">
-                <li class="breadcrumb-item"><a href="{% url 'configuracion' %}">Configuración</a></li>
-                <li class="breadcrumb-item active">Grupos Especializados</li>
-            </ol>
-        </nav>
+        <h1 class="tp-h2 mb-1">Niveles de Soporte</h1>
+        <div class="tp-breadcrumb">Configuración / Grupos Especializados</div>
+    </div>
+    
+    <!-- CONTENEDOR DERECHO CON DISPLAY FLEX -->
+    <div class="d-flex align-items-center gap-4">
+        
+        <!-- Buscador INDEPENDIENTE -->
+        <form method="GET" class="d-flex gap-2 m-0">
+            <input type="text" name="q" value="{{ query }}" class="form-control form-control-sm shadow-none border" placeholder="Buscar cuadrilla o agente..." style="width: 250px;">
+            <button type="submit" class="btn btn-sm btn-outline-secondary"><i class="fas fa-search"></i></button>
+            {% if query %}
+                <a href="{% url 'gestion_grupos' %}" class="btn btn-sm btn-outline-danger" title="Limpiar filtro"><i class="fas fa-times"></i></a>
+            {% endif %}
+        </form>
+        <!-- AQUÍ SE CIERRA EL FORMULARIO DEL BUSCADOR, NUNCA DESPUÉS DE LOS BOTONES -->
+        
+        <!-- Botones INDEPENDIENTES (Sin form) -->
+        <div class="d-flex gap-2">
+            <button type="button" class="btn btn-outline-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalAsignarAgente">
+                <i class="fas fa-user-plus me-2"></i> Adjudicar Agente
+            </button>
+            <button type="button" class="btn btn-primary shadow-sm" data-bs-toggle="modal" data-bs-target="#modalGrupo" onclick="document.getElementById('modalGrupoAction').textContent='Nuevo'; document.getElementById('formGrupo').reset(); document.getElementById('grupo_id').value='';">
+                <i class="fas fa-layer-group me-2"></i> Registrar Grupo
+            </button>
+        </div>
+        
     </div>
 </div>
 
 <div class="container-fluid p-0">
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show tp-alert" role="alert">
-                    <div class="d-flex align-items-center">
-                        <div class="tp-alert-dot bg-{% if message.tags == 'error' %}danger{% else %}success{% endif %}"></div>
-                        <span>{{ message }}</span>
-                    </div>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
-
-    <!-- Controles -->
-    <div class="d-flex justify-content-end mb-5 gap-3">
-        <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalAsignarAgente">
-            <i class="fas fa-user-plus me-2"></i> Adjudicar Agente
-        </button>
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalGrupo" data-mode="crear">
-            <i class="fas fa-layer-group me-2"></i> Registrar Grupo
-        </button>
-    </div>
 
     <!-- ===== MATRIZ DE GRUPOS ===== -->
     <div class="row g-4 mb-5">
-        {% for grupo in grupos_agentes %}
+        {% for grupo in page_obj %}
         <div class="col-md-6 col-lg-4">
             <div class="tp-group-card">
                 <div class="tp-card-header d-flex justify-content-between align-items-center">
@@ -76,7 +73,7 @@
                     {% with miembros=grupo.agentes_por_grupos_set.all %}
                         {% if miembros %}
                             <ul class="tp-member-list mb-auto">
-                                {% for gm in miembros %}
+                                {% for gm in miembros|slice:":5" %}
                                 <li class="tp-member-item">
                                     <div class="d-flex align-items-center">
                                         <i class="fas fa-user tp-caption opacity-50 me-2"></i>
@@ -88,11 +85,20 @@
                                 </li>
                                 {% endfor %}
                             </ul>
+                            
+                            <!-- Contador de los que quedan ocultos -->
+                            {% if miembros.count > 5 %}
+                                <div class="text-center py-2 tp-caption text-muted fst-italic border-bottom" style="border-color: var(--tp-border-light) !important;">
+                                    ... y {{ miembros.count|add:"-5" }} especialistas más.
+                                </div>
+                            {% endif %}
+                            
                         {% else %}
                             <p class="tp-caption opacity-50 text-center py-4 mb-auto">Cuadrilla Vacía</p>
                         {% endif %}
+                        
                         <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center" style="border-color: var(--tp-border-light) !important;">
-                            <span class="tp-caption text-uppercase fw-bold">Capacidad</span>
+                            <span class="tp-caption text-uppercase fw-bold">Capacidad Total</span>
                             <span class="tp-badge info px-2 py-1">{{ miembros|length }}</span>
                         </div>
                     {% endwith %}
@@ -109,34 +115,81 @@
         </div>
         {% endfor %}
     </div>
+
+    {% if page_obj.has_other_pages %}
+    <div class="d-flex justify-content-center mb-4">
+        <nav aria-label="Navegación de cuadrillas">
+            <ul class="pagination pagination-sm m-0 shadow-sm">
+                {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link text-secondary" href="?page={{ page_obj.previous_page_number }}&q={{ query }}"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link text-muted"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></span></li>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link bg-primary border-primary text-white fw-bold">{{ num }}</span></li>
+                    {% else %}
+                        <li class="page-item"><a class="page-link text-dark" href="?page={{ num }}&q={{ query }}">{{ num }}</a></li>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link text-secondary" href="?page={{ page_obj.next_page_number }}&q={{ query }}"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a></li>
+                {% else %}
+                    <li class="page-item disabled"><span class="page-link text-muted"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></span></li>
+                {% endif %}
+            </ul>
+        </nav>
+    </div>
+    {% endif %}
 </div>
 
 <!-- MODAL: Crear/Editar Grupo -->
 <div class="modal fade" id="modalGrupo" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+            
+            <!-- ENCABEZADO -->
             <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
-                <h5 class="modal-title tp-h3 m-0"><span id="modalGrupoAction">Modelar</span> Cuadrilla</h5>
+                <h5 class="modal-title tp-h3 m-0">
+                    <span id="modalGrupoAction">Nuevo</span> Grupo Operativo
+                </h5>
                 <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
             </div>
-            <form method="post" id="formGrupo" action="{% url 'gestion_grupos' %}" class="needs-validation" novalidate>
+            
+            <form method="post" id="formGrupo" class="needs-validation" novalidate>
                 {% csrf_token %}
-                <div class="modal-body p-4">
+                
+                <!-- CUERPO DEL MODAL (Aquí faltaba el p-4) -->
+                <div class="modal-body p-4 text-start">
                     <input type="hidden" id="grupo_id" name="grupo_id" value="">
+                    
                     <div class="mb-4">
-                        <label class="form-label tp-caption text-uppercase fw-bold">Nomenclatura (Nivel) <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control tp-input" id="grupo_nombre" name="nombre" placeholder="Ej: Soporte Avanzado N2" required>
+                        <label class="form-label tp-caption text-uppercase fw-bold">Servicio Asociado (Grupo) <span class="text-danger">*</span></label>
+                        <select class="form-select tp-input" id="grupo_nombre" name="nombre" required>
+                            <option value="">Seleccione un servicio...</option>
+                            {% for servicio in servicios %}
+                                <option value="{{ servicio.nombre }}">{{ servicio.nombre }}</option>
+                            {% endfor %}
+                        </select>
+                        <div class="invalid-feedback">Debe seleccionar un servicio base.</div>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label tp-caption text-uppercase fw-bold">Misión Operativa <span class="text-danger">*</span></label>
-                        <textarea class="form-control tp-input" id="grupo_descripcion" name="descripcion" rows="3" placeholder="Contexto técnico de las resoluciones" required></textarea>
+                        <textarea class="form-control tp-input" id="grupo_descripcion" name="descripcion" rows="3" placeholder="Ej: Especialistas encargados de atender fallas de red nivel 2" required></textarea>
+                        <div class="invalid-feedback">La misión operativa es requerida.</div>
                     </div>
                 </div>
+                
+                <!-- PIE DEL MODAL -->
                 <div class="modal-footer border-top-0 px-4 pb-4">
                     <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
                     <button type="submit" class="btn btn-primary">Consolidar Nivel</button>
                 </div>
             </form>
+            
         </div>
     </div>
 </div>
@@ -165,7 +218,7 @@
                         <label class="form-label tp-caption text-uppercase fw-bold">Cuadrilla Destino <span class="text-danger">*</span></label>
                         <select class="form-select tp-input" name="grupo" required>
                             <option value="" disabled selected>-- Nivel de adjudicación --</option>
-                            {% for grupo in grupos_agentes %}
+                            {% for grupo in page_obj.paginator.object_list %}
                                 <option value="{{ grupo.id }}">{{ grupo.nombre }}</option>
                             {% endfor %}
                         </select>

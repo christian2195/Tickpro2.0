@@ -30,11 +30,18 @@
                 <div class="tp-card-header d-flex justify-content-between align-items-center">
                     <div class="tp-eyebrow mb-0" style="margin:0;"><div class="tp-indicator"></div> Información General</div>
                     <span class="tp-badge {% if tikect.estado == 'cerrado' %}danger{% else %}success{% endif %}">
-                        {% if tikect.estado == 'cerrado' %}CERRADO{% else %}ABIERTO{% endif %}
+                        {% if tikect.estado == 'cerrado' %}
+                            <div class="mt-4">
+                                <span class="tp-caption fw-bold text-uppercase d-block mb-2 text-success">Memoria Técnica del Cierre:</span>
+                                <div class="p-3 bg-light border border-success rounded tp-body">
+                                    {{ tikect.descripcion_solucion }}
+                                </div>
+                            </div>
+                        {% endif %}
                     </span>
                 </div>
                 <div class="card-body p-4">
-                    <h3 class="tp-h2 mb-4">{{ tikect.titulo }}</h3>
+                    <h3 class="mb-4 text-break">{{ tikect.titulo }}</h3>
                     
                     <div class="row mb-4 g-3">
                         <div class="col-md-6">
@@ -43,7 +50,7 @@
                         </div>
                         <div class="col-md-6">
                             <p class="mb-1"><strong class="text-uppercase tp-caption">Usuario:</strong> <span class="tp-body ms-2">{{ tikect.usuario.username }}</span></p>
-                            <p class="mb-0"><strong class="text-uppercase tp-caption">Gerencia:</strong> <span class="tp-body ms-2">{{ tikect.gerencia }}</span></p>
+                            <p class="mb-0"><strong class="text-uppercase tp-caption">Gerencia:</strong> <span class="tp-body ms-2">{{ tikect.cliente.gerencia.nombre|default:"Sin registro" }}</span></p>
                         </div>
                     </div>
                     
@@ -57,9 +64,6 @@
                     <div class="row g-3">
                         <div class="col-md-6">
                             <p class="mb-0"><strong class="text-uppercase tp-caption">Servicio:</strong> <span class="tp-body ms-2">{{ tikect.servicio.nombre }}</span></p>
-                        </div>
-                        <div class="col-md-6">
-                            <p class="mb-0"><strong class="text-uppercase tp-caption">Cola:</strong> <span class="tp-body ms-2">{{ tikect.cola_perteneciente.nombre }}</span></p>
                         </div>
                     </div>
                     
@@ -106,9 +110,9 @@
                     </button>
                     
                     {% if not reasignado %}
-                    <a href="{% url 'reasignar_tikect' tikect.id %}" class="btn btn-outline-primary w-100 d-flex align-items-center justify-content-center">
+                    <button type="button" class="btn btn-outline-primary w-100 mt-2" data-bs-toggle="modal" data-bs-target="#reasignarModal{{ tikect.id }}">
                         <i class="fas fa-exchange-alt me-2"></i> Reasignar Ticket
-                    </a>
+                    </button>
                     {% endif %}
                 </div>
             </div>
@@ -171,6 +175,35 @@
                 <div class="modal-footer border-top-0 px-4 pb-4">
                     <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-primary">Confirmar Resolución</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Reasignar -->
+<div class="modal fade" id="reasignarModal{{ tikect.id }}" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: var(--tp-rad-lg);">
+            <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                <h5 class="modal-title tp-h3 m-0">Reasignar Ticket #{{ tikect.id }}</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'reasignar_tikect' tikect.id %}">
+                {% csrf_token %}
+                <div class="modal-body p-4 text-start">
+                    <label class="form-label tp-caption fw-bold">Seleccionar Nuevo Especialista <span class="text-danger">*</span></label>
+                    <select class="form-select" name="nuevo_agente" required>
+                        <option value="">Seleccione un compañero...</option>
+                        <!-- Si pasaste la variable agentes_grupo desde views.py a detalle_tikect -->
+                        {% for agente in agentes_grupo %}
+                            <option value="{{ agente.id }}">{{ agente.nombre_usuario }} - {{ agente.nombre }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="modal-footer px-4 pb-4 border-0">
+                    <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-primary">Confirmar Traspaso</button>
                 </div>
             </form>
         </div>

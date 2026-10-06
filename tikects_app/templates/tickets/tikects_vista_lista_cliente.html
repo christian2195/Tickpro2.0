@@ -67,7 +67,7 @@
                             <th style="width: 35%;">Asunto</th>
                             <th style="width: 20%;">Área de Enrutamiento</th>
                             <th style="width: 15%;">Progreso</th>
-                            <th style="width: 10%;" class="text-end">Ficha</th>
+                            <th style="width: 10%;" class="text-end">ACCIÓN</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -85,8 +85,9 @@
                                 <div class="tp-caption mt-1">{{ tikect.descripcion|truncatechars:50 }}</div>
                             </td>
                             <td>
+                                <!-- Corrección: Cambiamos el <td> interno por un <div> -->
                                 <div class="tp-body text-dark">{{ tikect.servicio.nombre }}</div>
-                                <td class="tp-caption">{{ tikect.cliente.gerencia.nombre|default:"Sin asignar"|truncatechars:20 }}</td>
+                                <div class="tp-caption mt-1">{{ tikect.cliente.gerencia.nombre|default:"Sin asignar"|truncatechars:20 }}</div>
                             </td>
                             <td>
                                 {% if tikect.estado == 'cerrado' %}
@@ -96,7 +97,10 @@
                                 {% endif %}
                             </td>
                             <td class="text-end">
-                                <a href="{% url 'detalle_tikect' tikect.id %}" class="btn btn-outline-primary btn-sm px-3 border-0 bg-transparent text-decoration-underline shadow-none btn-detalle-modal" data-id="{{ tikect.id }}">Ver</a>
+                                <!-- Corrección: Botón estandarizado del "ojito" -->
+                                <a href="{% url 'detalle_tikect' tikect.id %}" class="tp-action-btn btn-detalle-modal" data-id="{{ tikect.id }}" title="Ver detalles">
+                                    <i class="fas fa-eye"></i>
+                                </a>
                             </td>
                         </tr>
                         {% endfor %}
@@ -137,34 +141,23 @@
 
     <!-- Soporte Fijo -->
     <div class="mt-5 pt-5 border-top" style="border-color: var(--tp-border-dark) !important;">
-        <div class="tp-eyebrow">CANALES DE ESCALAMIENTO</div>
-        <div class="row g-4 mt-2">
-            <div class="col-md-6 col-lg-3">
-                <div class="card p-4 h-100">
-                    <div class="tp-contact-icon"><i class="fas fa-envelope"></i></div>
-                    <h6 class="tp-caption text-uppercase fw-bold mb-1">Mesa Virtual</h6>
-                    <p class="tp-body mb-0 text-dark fw-medium">soporte@tickpro.com</p>
+        <div class="tp-eyebrow mb-3">CANALES DE ESCALAMIENTO</div>
+        <div class="row g-4">
+            <!-- Tarjeta 1: Correo institucional (Ocupará el 50% en pantallas grandes) -->
+            <div class="col-md-6">
+                <div class="card p-4 h-100 shadow-sm border-0" style="border-radius: var(--tp-rad-md);">
+                    <div class="tp-contact-icon text-primary mb-3"><i class="fas fa-envelope fs-4"></i></div>
+                    <h6 class="tp-caption text-uppercase fw-bold mb-1 text-muted">Correo institucional</h6>
+                    <p class="tp-body mb-0 text-dark fw-bold">{{ apariencia.email_soporte|default:"soporte@tickpro.com" }}</p>
                 </div>
             </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card p-4 h-100">
-                    <div class="tp-contact-icon"><i class="fas fa-phone-alt"></i></div>
-                    <h6 class="tp-caption text-uppercase fw-bold mb-1">Línea Directa</h6>
-                    <p class="tp-body mb-0 text-dark fw-medium">(0212) 123-4567</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card p-4 h-100">
-                    <div class="tp-contact-icon"><i class="fas fa-clock"></i></div>
-                    <h6 class="tp-caption text-uppercase fw-bold mb-1">Horario Base</h6>
-                    <p class="tp-body mb-0 text-dark fw-medium">Lun-Vie, 8:00 AM - 5:00 PM</p>
-                </div>
-            </div>
-            <div class="col-md-6 col-lg-3">
-                <div class="card p-4 h-100">
-                    <div class="tp-contact-icon"><i class="fas fa-bolt"></i></div>
-                    <h6 class="tp-caption text-uppercase fw-bold mb-1">SLA Estimado</h6>
-                    <p class="tp-body mb-0 text-dark fw-medium">24h - 48h hábiles</p>
+            
+            <!-- Tarjeta 2: Línea Directa (Ocupará el otro 50%) -->
+            <div class="col-md-6">
+                <div class="card p-4 h-100 shadow-sm border-0" style="border-radius: var(--tp-rad-md);">
+                    <div class="tp-contact-icon text-primary mb-3"><i class="fas fa-phone-alt fs-4"></i></div>
+                    <h6 class="tp-caption text-uppercase fw-bold mb-1 text-muted">Línea Directa</h6>
+                    <p class="tp-body mb-0 text-dark fw-bold">{{ apariencia.telefono_soporte|default:"(0212) 123-4567" }}</p>
                 </div>
             </div>
         </div>

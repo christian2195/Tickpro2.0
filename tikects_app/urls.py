@@ -105,6 +105,10 @@ urlpatterns = [
     # NOTIFICACIONES
     # ============================================
     path('notificaciones/check/', views.check_notifications, name='check_notifications'),
+    path('notificaciones/limpiar/', views.limpiar_notificaciones, name='limpiar_notificaciones'),
+
+    # URL de Apariencia
+    path('configuracion/apariencia/', views.configuracion_apariencia, name='configuracion_apariencia'),
 
     # ============================================
     # RECUPERACIÓN DE CONTRASEÑA (UNIFICADO)

@@ -139,6 +139,7 @@ class Tickets(models.Model):
     # Campos para cierre
     cerrado_por_agente = models.ForeignKey(Agentes, on_delete=models.SET_NULL, null=True, blank=True, related_name='tickets_cerrados')
     fecha_cierre = models.DateTimeField(null=True, blank=True)
+    descripcion_solucion = models.TextField(null=True, blank=True)
 
     def __str__(self):
         return f"#{self.id} - {self.titulo}"
@@ -200,3 +201,13 @@ def crear_perfil_agente_admin(sender, instance, created, **kwargs):
                 'correo': instance.email or f"{instance.username}@sistema.local"
             }
         )
+
+class ConfiguracionApariencia(models.Model):
+    # NUEVO: Campo para el ícono/logo
+    icono_sistema = models.ImageField(upload_to='logos/', null=True, blank=True)
+    
+    email_soporte = models.EmailField(default="soporte@tickpro.com")
+    telefono_soporte = models.CharField(max_length=50, default="(0212) 123-4567")
+
+    def __str__(self):
+        return "Configuración de Apariencia y Contacto"

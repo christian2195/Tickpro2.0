@@ -17,7 +17,7 @@ from datetime import datetime
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest
 from django.contrib.auth.decorators import login_required
-from .models import Tickets, Grupos_Agentes, Agentes
+from .models import Tickets, Grupos_Agentes, Agentes, ConfiguracionApariencia
 
 # ============================================
 # MODELOS
@@ -84,51 +84,59 @@ def pagina_principal(request):
     user = request.user
     now = datetime.now()
     
-    agente = None
-    notificaciones = []
-    ultimos_tickets = []
-    context = {'now': now}
-
     try:
-        if hasattr(user, 'agente'):
-            agente = user.agente
-        else:
-            agente = Agentes.objects.filter(usuario=user).first()
-    except Exception as e:
-        print(f"Error al verificar agente: {e}")
+        agente = user.agente if hasattr(user, 'agente') else Agentes.objects.filter(usuario=user).first()
+    except Exception:
         agente = None
         
-    context['agente'] = agente
+    context = {'now': now, 'agente': agente}
 
     if user.is_superuser or agente:
-        if agente:
-            notificaciones = Notificaciones.objects.filter(agente=agente, leida=False)[:5]
+        notificaciones = Notificaciones.objects.filter(agente=agente, leida=False)[:5] if agente else []
             
         if user.is_superuser:
-            ultimos_tickets = Tickets.objects.all().order_by('-fecha_creacion')[:5]
+            tickets_base = Tickets.objects.all()
         else:
-            tickets_creados = Tickets.objects.filter(usuario=user)
-            tickets_reasignados = Tickets.objects.filter(
-                id__in=ReasignacionTikects.objects.filter(agente_nuevo=agente).values_list('tikect_id', flat=True)
-            )
-            ultimos_tickets = (tickets_creados | tickets_reasignados).distinct().order_by('-fecha_creacion')[:5]
+            # LÓGICA CORREGIDA: Traer TODAS las formas en las que un ticket es de un agente
+            t_creados = Tickets.objects.filter(usuario=user).values_list('id', flat=True)
+            t_reasig = ReasignacionTikects.objects.filter(agente_nuevo=agente).values_list('tikect_id', flat=True)
+            t_asig = AsignacionTikects.objects.filter(agente=agente).values_list('tikect_id', flat=True)
+            
+            tickets_base = Tickets.objects.filter(
+                Q(id__in=t_creados) | 
+                Q(id__in=t_reasig) | 
+                Q(id__in=t_asig) | 
+                Q(agente_asignado=agente)
+            ).distinct()
+
+        ultimos_tickets = tickets_base.order_by('-fecha_creacion')[:5]
+        total_tickets = tickets_base.count()
+        tickets_abiertos = tickets_base.exclude(estado='cerrado').count()
+        tickets_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
 
         context.update({
             'notificaciones': notificaciones,
-            'total_tickets': Tickets.objects.count(),
-            'tickets_abiertos': Tickets.objects.exclude(estado='cerrado').count(),
-            'tickets_cerrados': Tickets.objects.filter(estado__iexact='cerrado').count(),
+            'total_tickets': total_tickets,
+            'tickets_abiertos': tickets_abiertos,
+            'tickets_cerrados': tickets_cerrados,
+            # Añade estas 3 líneas para que el HTML del agente las lea:
+            'total_mis_tickets': total_tickets,
+            'mis_tickets_abiertos': tickets_abiertos,
+            'mis_tickets_cerrados': tickets_cerrados,
+            
             'total_agentes': Agentes.objects.count(),
+            'ultimos_tickets': ultimos_tickets
         })
     else:
-        ultimos_tickets = Tickets.objects.filter(usuario=user).order_by('-fecha_creacion')[:5]
+        tickets_cliente = Tickets.objects.filter(usuario=user)
+        ultimos_tickets = tickets_cliente.order_by('-fecha_creacion')[:5]
         context.update({
-            'total_mis_tickets': Tickets.objects.filter(usuario=user).count(),
-            'mis_tickets_abiertos': Tickets.objects.filter(usuario=user).exclude(estado='cerrado').count(),
-            'mis_tickets_cerrados': Tickets.objects.filter(usuario=user, estado='cerrado').count(),
+            'total_mis_tickets': tickets_cliente.count(),
+            'mis_tickets_abiertos': tickets_cliente.exclude(estado='cerrado').count(),
+            'mis_tickets_cerrados': tickets_cliente.filter(estado='cerrado').count(),
+            'ultimos_tickets': ultimos_tickets
         })
 
-    context['ultimos_tickets'] = ultimos_tickets
     return render(request, 'inicio de sesion/pagina_principal.html', context)
 
 # ============================================
@@ -228,11 +236,18 @@ def editar_servicios(request, servicio_id):
 @superuser_required
 @login_required
 def clientes(request):
-    clientes_list = Cliente.objects.all().order_by('nombre')
+    # Optimizamos la consulta y traemos las gerencias
+    clientes_list = Cliente.objects.select_related('usuario', 'gerencia').all().order_by('nombre')
+    gerencias = Gerencia.objects.all()
+    
     paginator = Paginator(clientes_list, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    return render(request, 'usuarios/gestion_clientes.html', {'page_obj': page_obj})
+    
+    return render(request, 'usuarios/gestion_clientes.html', {
+        'page_obj': page_obj,
+        'gerencias': gerencias # Enviamos las gerencias al HTML
+    })
 
 @superuser_required
 @login_required
@@ -248,6 +263,10 @@ def crear_clientes(request):
 
         if not nombre or not apellido or not username or not password or not gerencia_input:
             messages.error(request, "Todos los campos marcados como obligatorios deben ser completados.")
+            return redirect('ver_cliente')
+
+        if len(password) < 8:
+            messages.error(request, "La contraseña debe tener un mínimo de 8 caracteres.")
             return redirect('ver_cliente')
 
         if User.objects.filter(username=username).exists():
@@ -306,7 +325,10 @@ def editar_cliente(request, cliente_id):
             messages.error(request, "Nombre, apellido, usuario y gerencia son obligatorios.")
             return redirect('ver_cliente')
 
-        # VALIDACIÓN CLAVE: Validar que el nuevo username no lo tenga OTRA cuenta
+        if password and len(password) < 8:
+            messages.error(request, "La nueva contraseña debe tener un mínimo de 8 caracteres.")
+            return redirect('ver_cliente')
+
         if User.objects.filter(username=username).exclude(id=cliente.usuario.id).exists():
             messages.error(request, f"El nombre de usuario '{username}' ya está en uso por otra cuenta.")
             return redirect('ver_cliente')
@@ -324,9 +346,13 @@ def editar_cliente(request, cliente_id):
             cliente.nombre = f"{nombre} {apellido}"
             cliente.correo = email
             cliente.telefono = telefono
-            cliente.gerencia = gerencia_input
-            cliente.save()
+            
+            # CORRECCIÓN: Guardamos la gerencia desde el ID del Select
+            if gerencia_input.isdigit():
+                gerencia_obj = get_object_or_404(Gerencia, id=int(gerencia_input))
+                cliente.gerencia = gerencia_obj
 
+            cliente.save()
             messages.success(request, f"Cliente '{nombre} {apellido}' actualizado con éxito.")
         except Exception as e:
             messages.error(request, f"Error al actualizar: {str(e)}")
@@ -342,8 +368,15 @@ def eliminar_cliente(request, cliente_id):
     if request.method == 'POST':
         try:
             nombre = cliente.nombre
-            cliente.delete()
-            messages.success(request, f"Cliente '{nombre}' eliminado exitosamente.")
+            usuario_asociado = cliente.usuario
+            
+            # Al eliminar el usuario raíz, Django elimina el cliente en cascada
+            if usuario_asociado:
+                usuario_asociado.delete()
+            else:
+                cliente.delete()
+                
+            messages.success(request, f"Cliente '{nombre}' y su credencial de acceso eliminados exitosamente.")
         except Exception as e:
             messages.error(request, f"Error al eliminar cliente: {str(e)}")
     return redirect('ver_cliente')
@@ -422,8 +455,12 @@ def crear_agente(request):
     email = request.POST.get('email', '').strip()
     password = request.POST.get('password', '').strip()
 
-    if not all([nombre, apellido, username, email, password]):
-        messages.error(request, "Todos los campos son obligatorios.")
+    if not all([nombre, apellido, username, password]):
+        messages.error(request, "Nombre, apellido, usuario y contraseña son obligatorios.")
+        return redirect('gestion_agentes')
+
+    if len(password) < 8:
+        messages.error(request, "La contraseña debe tener un mínimo de 8 caracteres.")
         return redirect('gestion_agentes')
 
     # VALIDACIÓN CLAVE: Prevenir que se solape con un cliente u otro agente existente
@@ -469,8 +506,13 @@ def editar_agente(request, agente_id):
         email = request.POST.get('email', '').strip()
         nueva_password = request.POST.get('password', '').strip()
 
-        if not all([nombre, apellido, username, email]):
-            messages.error(request, "Nombre, apellido, usuario y email son obligatorios.")
+        if not all([nombre, apellido, username]):
+            messages.error(request, "Nombre, apellido y usuario son obligatorios.")
+            return redirect('gestion_agentes')
+
+        # NUEVO: Validación de 8 caracteres si escribe una clave nueva
+        if nueva_password and len(nueva_password) < 8:
+            messages.error(request, "La nueva contraseña debe tener un mínimo de 8 caracteres.")
             return redirect('gestion_agentes')
 
         # VALIDACIÓN CLAVE: Validar que el nuevo username no lo tenga OTRA cuenta
@@ -508,8 +550,20 @@ def eliminar_agente(request, agente_id):
     if request.method == 'POST':
         try:
             nombre_usuario = agente.nombre_usuario
-            agente.delete()
-            messages.success(request, f"Agente '{nombre_usuario}' eliminado exitosamente.")
+            usuario_asociado = agente.usuario
+            
+            # Blindaje: Evitar que el administrador borre su propia cuenta en uso
+            if usuario_asociado == request.user:
+                messages.error(request, "Acción denegada: No puedes eliminar tu propio usuario mientras tienes la sesión iniciada.")
+                return redirect('gestion_agentes')
+            
+            # Al eliminar el usuario raíz, Django elimina el agente en cascada
+            if usuario_asociado:
+                usuario_asociado.delete()
+            else:
+                agente.delete()
+                
+            messages.success(request, f"Agente '{nombre_usuario}' y su credencial de acceso eliminados exitosamente.")
         except Exception as e:
             messages.error(request, f"Error al eliminar el agente: {str(e)}")
     return redirect('gestion_agentes')
@@ -521,39 +575,67 @@ def eliminar_agente(request, agente_id):
 @superuser_required
 @login_required
 def gestion_grupos(request):
-    grupos_agentes = Grupos_Agentes.objects.prefetch_related(
+    # 1. Buscador
+    query = request.GET.get('q', '')
+    
+    # 2. Consulta Base con prefetch
+    grupos_qs = Grupos_Agentes.objects.prefetch_related(
         Prefetch('agentes_por_grupos_set', 
                  queryset=Agentes_Por_Grupos.objects.select_related('agente__usuario'))
-    ).all()
+    ).all().order_by('nombre')
+    
+    if query:
+        grupos_qs = grupos_qs.filter(
+            Q(nombre__icontains=query) |
+            Q(agentes_por_grupos__agente__nombre_usuario__icontains=query) |
+            Q(agentes_por_grupos__agente__nombre__icontains=query)
+        ).distinct()
+
+    # 3. Paginación de Grupos (6 tarjetas por página)
+    paginator = Paginator(grupos_qs, 6)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+    
     agentes = Agentes.objects.select_related('usuario').all()
+    servicios = Tickets_Servicios.objects.all()
     
     if request.method == 'POST':
         grupo_id = request.POST.get('grupo_id')
-        if grupo_id:
+        nombre = request.POST.get('nombre', '').strip()
+        descripcion = request.POST.get('descripcion', '').strip()
+        
+        if grupo_id: # EDICIÓN
             grupo = get_object_or_404(Grupos_Agentes, id=grupo_id)
-            nombre = request.POST.get('nombre', '').strip()
-            descripcion = request.POST.get('descripcion', '').strip()
             if nombre and descripcion:
-                grupo.nombre = nombre
-                grupo.descripcion = descripcion
-                grupo.save()
-                messages.success(request, 'Grupo actualizado con éxito.')
+                # Validar que no cambie el nombre a un servicio que ya tiene otro grupo
+                if Grupos_Agentes.objects.filter(nombre=nombre).exclude(id=grupo_id).exists():
+                    messages.error(request, f'Ya existe un grupo asociado al servicio "{nombre}".')
+                else:
+                    grupo.nombre = nombre
+                    grupo.descripcion = descripcion
+                    grupo.save()
+                    messages.success(request, 'Grupo actualizado con éxito.')
             else:
                 messages.error(request, 'Todos los campos son obligatorios.')
             return redirect('gestion_grupos')
-        else:
-            nombre = request.POST.get('nombre', '').strip()
-            descripcion = request.POST.get('descripcion', '').strip()
+            
+        else: # CREACIÓN
             if nombre and descripcion:
-                Grupos_Agentes.objects.create(nombre=nombre, descripcion=descripcion)
-                messages.success(request, 'Grupo creado con éxito.')
+                # Validar que no exista ya un grupo para ese servicio
+                if Grupos_Agentes.objects.filter(nombre=nombre).exists():
+                    messages.error(request, f'El servicio "{nombre}" ya tiene una cuadrilla asignada. No se permiten duplicados.')
+                else:
+                    Grupos_Agentes.objects.create(nombre=nombre, descripcion=descripcion)
+                    messages.success(request, 'Grupo creado con éxito.')
             else:
                 messages.error(request, 'Todos los campos son obligatorios.')
             return redirect('gestion_grupos')
     
     return render(request, 'agentes/gestion_grupos.html', {
-        'grupos_agentes': grupos_agentes,
-        'agentes': agentes
+        'page_obj': page_obj, # Enviamos el objeto paginado
+        'query': query,
+        'agentes': agentes,
+        'servicios': servicios
     })
 
 @superuser_required
@@ -772,6 +854,16 @@ def _get_reasignaciones_dict(tikects):
 
 @login_required
 def ver_tikects(request):
+    # ==========================================
+    # CONTROL DE TRÁFICO: Proteger la vista global
+    # ==========================================
+    agente_actual = Agentes.objects.filter(usuario=request.user).first()
+    if not request.user.is_superuser:
+        if agente_actual:
+            return redirect('ver_tikects_asignados_agentes') # Intercepta la campana y lo manda a su panel
+        else:
+            return redirect('ver_mis_tikects')
+            
     estado = None
     url_name = request.resolver_match.url_name
     if url_name == 'ver_tikects_cerrados':
@@ -779,12 +871,10 @@ def ver_tikects(request):
     elif url_name == 'ver_tikects_abiertos':
         estado = 'abierto'
     
-    # 1. Calculamos las estadísticas BASE (sin importar el filtro actual)
     tickets_base = _get_tickets_base(request, None)
     tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
     tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
     
-    # 2. Obtenemos los IDs de los tickets reasignados
     reasignados_ids = set()
     for r in ReasignacionTikects.objects.select_related('agente_nuevo').all():
         if r.agente_nuevo:
@@ -792,11 +882,12 @@ def ver_tikects(request):
             
     tikects_reasignados_count = len(reasignados_ids)
     
-    # 3. Aplicamos la paginación a la lista filtrada
     tikects = _get_tickets_base(request, estado)
     paginator = Paginator(tikects, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+    
+    notificaciones = Notificaciones.objects.filter(agente=agente_actual, leida=False)[:5] if agente_actual else []
     
     context = {
         'tikects': page_obj,
@@ -806,6 +897,7 @@ def ver_tikects(request):
         'reasignados_ids': reasignados_ids,
         'servicios': Tickets_Servicios.objects.all(),
         'gerencias': Gerencia.objects.all(),
+        'notificaciones': notificaciones,
     }
     
     return render(request, 'tickets/tikects_ver_todos.html', context)
@@ -855,54 +947,31 @@ ver_mis_tikects_abiertos = ver_mis_tikects
 
 @login_required
 def ver_tikects_asignados_agentes(request):
-    """Vista para agentes o superusuarios: ver tickets asignados"""
+    """Vista unificada para agentes: ver tickets asignados, creados o reasignados"""
     user = request.user
     
-    # Si es superusuario, mostrar todos los tickets
+    agente_actual = getattr(user, 'agente', getattr(user, 'agentes', None))
+    
     if user.is_superuser:
-        # AÑADIDO: select_related
         tickets_base = Tickets.objects.select_related('usuario', 'servicio', 'cliente').all().order_by('-fecha_creacion')
-        tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
-        tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
-        
-        url_name = request.resolver_match.url_name
-        if url_name == 'ver_tikects_asignados_agentes_cerrados':
-            tickets_filtrados = tickets_base.filter(estado__iexact='cerrado')
-        elif url_name == 'ver_tikects_asignados_agentes_abiertos':
-            tickets_filtrados = tickets_base.exclude(estado__iexact='cerrado')
-        else:
-            tickets_filtrados = tickets_base
+    else:
+        if not agente_actual:
+            messages.warning(request, "No tienes un perfil de agente asignado.")
+            return redirect('pagina_principal')
             
-        paginator = Paginator(tickets_filtrados, 10)
-        page_number = request.GET.get('page')
-        page_obj = paginator.get_page(page_number)
-
-        reasignados_ids = set()
-        for r in ReasignacionTikects.objects.all():
-            try:
-                if r.agente_nuevo:
-                    reasignados_ids.add(r.ticket_id)
-            except:
-                pass
-
-        context = {
-            'tikects': page_obj,
-            'tikects_abiertos': tikects_abiertos,
-            'tikects_cerrados': tikects_cerrados,
-            'reasignados_ids': reasignados_ids,
-            'es_superusuario': True,
-        }
-        return render(request, 'tickets/tikects_asignados_agentes.html', context)
-    
-    # Si no es superusuario, obtener el agente del usuario actual
-    try:
-        agente_actual = Agentes.objects.get(usuario=user)
-    except Agentes.DoesNotExist:
-        messages.warning(request, "No tienes un perfil de agente asignado.")
-        return redirect('pagina_principal')
-    
-    # AÑADIDO: select_related
-    tickets_base = Tickets.objects.select_related('usuario', 'servicio', 'cliente').filter(usuario=user).order_by('-fecha_creacion')
+        tikects_directos = Tickets.objects.filter(usuario=user).values_list('id', flat=True)
+        reasignaciones_ids = ReasignacionTikects.objects.filter(agente_nuevo=agente_actual).values_list('tikect_id', flat=True)
+        asignaciones_ids = AsignacionTikects.objects.filter(agente=agente_actual).values_list('tikect_id', flat=True)
+        
+        tickets_base = Tickets.objects.filter(
+            Q(id__in=tikects_directos) | 
+            Q(id__in=reasignaciones_ids) | 
+            Q(id__in=asignaciones_ids) | 
+            Q(agente_asignado=agente_actual)
+        ).select_related('usuario', 'servicio', 'cliente').distinct().order_by('-fecha_creacion')
+        
+    # ESTADÍSTICAS FIJAS (No cambian al cambiar de pestaña)
+    total_tikects_agente = tickets_base.count()
     tikects_cerrados = tickets_base.filter(estado__iexact='cerrado').count()
     tikects_abiertos = tickets_base.exclude(estado__iexact='cerrado').count()
 
@@ -918,22 +987,25 @@ def ver_tikects_asignados_agentes(request):
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
-    reasignados_ids = set()
-    for r in ReasignacionTikects.objects.all():
-        try:
-            if r.agente_nuevo:
-                reasignados_ids.add(r.ticket_id)
-        except:
-            pass
+    reasignados_ids = set(ReasignacionTikects.objects.filter(agente_nuevo__isnull=False).values_list('tikect_id', flat=True))
+    notificaciones = Notificaciones.objects.filter(agente=agente_actual, leida=False)[:5] if agente_actual else []
 
     context = {
         'tikects': page_obj,
+        'total_tikects_agente': total_tikects_agente, # NUEVA VARIABLE ENVIADA AL HTML
         'tikects_abiertos': tikects_abiertos,
         'tikects_cerrados': tikects_cerrados,
         'reasignados_ids': reasignados_ids,
-        'es_superusuario': False,
+        'es_superusuario': user.is_superuser,
+        'notificaciones': notificaciones,
+        'servicios': Tickets_Servicios.objects.all(),
+        'gerencias': Gerencia.objects.all(),
     }
     return render(request, 'tickets/tikects_asignados_agentes.html', context)
+
+# Re-declaramos los alias por seguridad
+ver_tikects_asignados_agentes_cerrados = ver_tikects_asignados_agentes
+ver_tikects_asignados_agentes_abiertos = ver_tikects_asignados_agentes
 
 
 @login_required
@@ -965,6 +1037,8 @@ def ver_tikects_asignados_agentes_cerrados(request):
             'tikects_cerrados': tikects_cerrados,
             'reasignados_ids': reasignados_ids,
             'es_superusuario': True,
+            'servicios': Tickets_Servicios.objects.all(),
+            'gerencias': Gerencia.objects.all(),
         }
         return render(request, 'tickets/tikects_asignados_agentes.html', context)
     
@@ -1024,6 +1098,8 @@ def ver_tikects_asignados_agentes_cerrados(request):
         'tikects_abiertos': tikects_abiertos,
         'tikects_cerrados': tikects_cerrados,
         'es_superusuario': False,
+        'servicios': Tickets_Servicios.objects.all(),
+        'gerencias': Gerencia.objects.all(),
     })
 
 
@@ -1056,6 +1132,8 @@ def ver_tikects_asignados_agentes_abiertos(request):
             'tikects_cerrados': tikects_cerrados,
             'reasignados_ids': reasignados_ids,
             'es_superusuario': True,
+            'servicios': Tickets_Servicios.objects.all(),
+            'gerencias': Gerencia.objects.all(),
         }
         return render(request, 'tickets/tikects_asignados_agentes.html', context)
     
@@ -1112,6 +1190,8 @@ def ver_tikects_asignados_agentes_abiertos(request):
         'tikects_abiertos': tikects_abiertos,
         'tikects_cerrados': tikects_cerrados,
         'es_superusuario': False,
+        'servicios': Tickets_Servicios.objects.all(),
+        'gerencias': Gerencia.objects.all(),
     })
 
 # ============================================
@@ -1121,24 +1201,31 @@ def ver_tikects_asignados_agentes_abiertos(request):
 @login_required
 def detalle_tikect(request, tikect_id):
     tikect = get_object_or_404(Tickets, id=tikect_id)
+    agente_actual = Agentes.objects.filter(usuario=request.user).first()
+    
     try:
-        Notificaciones.objects.filter(tikect=tikect, agente__usuario=request.user).update(leida=True)
+        if agente_actual:
+            Notificaciones.objects.filter(tikect=tikect, agente=agente_actual).update(leida=True)
     except:
         pass
 
     if request.method == 'POST':
         tikect.estado = 'cerrado'
         tikect.save()
-        if hasattr(request.user, 'agente'):
+        
+        # REDIRECCIÓN SEGURA
+        if request.user.is_superuser:
+            return redirect('ver_tikects')
+        elif agente_actual:
             return redirect('ver_tikects_asignados_agentes')
         else:
-            return redirect('ver_tikects')
+            return redirect('ver_mis_tikects')
 
     reasignaciones = ReasignacionTikects.objects.filter(tikect=tikect)
     reasignado = False
     if reasignaciones.exists():
         agente_nuevo = reasignaciones.first().agente_nuevo
-        if hasattr(request.user, 'agente') and agente_nuevo == request.user.agente:
+        if agente_actual and agente_nuevo == agente_actual:
             reasignado = True
 
     return render(request, 'tickets/detalle_tikect.html', {
@@ -1150,15 +1237,23 @@ def detalle_tikect(request, tikect_id):
 def cerrar_tikect(request, tikect_id):
     tikect = get_object_or_404(Tickets, id=tikect_id)
     if request.method == 'POST':
+        agente_actual = Agentes.objects.filter(usuario=request.user).first()
+        
+        # BLINDAJE DE CONCURRENCIA: Verificar si alguien más ya cerró el ticket
+        if tikect.estado == 'cerrado':
+            messages.error(request, f"Atención: El ticket #{tikect.id} ya fue cerrado previamente por otro usuario.")
+            if request.user.is_superuser:
+                return redirect('ver_tikects')
+            elif agente_actual:
+                return redirect('ver_tikects_asignados_agentes')
+            else:
+                return redirect('ver_mis_tikects')
+
         descripcion_solucion = request.POST.get('descripcion_solucion')
         tikect.estado = 'cerrado'
         tikect.fecha_cierre = timezone.now()
         tikect.descripcion_solucion = descripcion_solucion
-        
-        if hasattr(request.user, 'agente'):
-            tikect.cerrado_por_agente = request.user.agente
-        else:
-            tikect.cerrado_por_agente = Agentes.objects.filter(usuario=request.user).first()
+        tikect.cerrado_por_agente = agente_actual
             
         tikect.save()
         
@@ -1166,50 +1261,54 @@ def cerrar_tikect(request, tikect_id):
             asunto = f"Ticket Cerrado: #{tikect.id} - {tikect.titulo}"
             mensaje = f"Hola {tikect.usuario.first_name},\n\nTu ticket ha sido marcado como CERRADO.\nSolución aplicada: {descripcion_solucion}"
             try:
-                send_mail(
-                    asunto,
-                    mensaje,
-                    settings.DEFAULT_FROM_EMAIL,
-                    [tikect.usuario.email],
-                    fail_silently=True,
-                )
+                send_mail(asunto, mensaje, settings.DEFAULT_FROM_EMAIL, [tikect.usuario.email], fail_silently=True)
             except Exception as e:
                 print(f"Error enviando correo: {e}")
 
-        if hasattr(request.user, 'agente'):
+        if request.user.is_superuser:
+            return redirect('ver_tikects')
+        elif agente_actual:
             return redirect('ver_tikects_asignados_agentes')
         else:
-            return redirect('ver_tikects')
+            return redirect('ver_mis_tikects')
+            
     return redirect('detalle_tikect', tikect_id=tikect.id)
 
 @login_required
-def reasignar_tikect(request, tikect_id):  # Asegurar que sea tikect_id
-    ticket = get_object_or_404(Tickets, id=tikect_id)  # Usar tikect_id
+def reasignar_tikect(request, tikect_id):  
+    ticket = get_object_or_404(Tickets, id=tikect_id)  
     
-    try:
-        agente_actual = Agentes.objects.get(usuario=request.user)
-    except Agentes.DoesNotExist:
-        messages.error(request, "No tienes permisos para reasignar tickets. No eres un agente.")
-        return redirect('detalle_tikect', tikect_id=ticket.id)  # Usar tikect_id
+    # Búsqueda segura del agente
+    agente_actual = Agentes.objects.filter(usuario=request.user).first()
 
-    if ReasignacionTikects.objects.filter(tikect=ticket, agente_nuevo=agente_actual).exists():
-        messages.error(request, "Este ticket ya ha sido reasignado.")
+    if not request.user.is_superuser and not agente_actual:
+        messages.error(request, "No tienes permisos para reasignar tickets.")
         return redirect('detalle_tikect', tikect_id=ticket.id)
 
-    grupo_agente_actual = Agentes_Por_Grupos.objects.filter(agente=agente_actual).first()
-    if not grupo_agente_actual:
-        messages.error(request, "No perteneces a ningún grupo resolutor.")
-        return redirect('detalle_tikect', tikect_id=ticket.id)
+    if ticket.estado == 'cerrado':
+        messages.error(request, "No se puede reasignar este ticket porque ya fue cerrado.")
+        return redirect('ver_tikects_asignados_agentes')
 
-    agentes_grupo = Agentes.objects.filter(
-        agentes_por_grupos__grupo=grupo_agente_actual.grupo
-    ).exclude(id=agente_actual.id)
+    # LÓGICA DE COMPAÑEROS DE GRUPO
+    if request.user.is_superuser:
+        agentes_grupo = Agentes.objects.exclude(id=agente_actual.id) if agente_actual else Agentes.objects.all()
+    else:
+        # 1. Buscamos todos los grupos a los que pertenece el agente
+        grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
+        
+        if grupos_del_agente:
+            # 2. Traemos a todos los agentes que estén en cualquiera de esos grupos (excluyéndolo a él mismo)
+            agentes_grupo = Agentes.objects.filter(
+                agentes_por_grupos__grupo__in=grupos_del_agente
+            ).exclude(id=agente_actual.id).distinct()
+        else:
+            agentes_grupo = [] 
 
     if request.method == 'POST':
         nuevo_agente_id = request.POST.get('nuevo_agente')
         if not nuevo_agente_id:
-            messages.error(request, "Debe seleccionar un agente para reasignar.")
-            return redirect('reasignar_tikect', tikect_id=ticket.id)  # Usar tikect_id
+            messages.error(request, "Debe seleccionar un agente.")
+            return redirect('reasignar_tikect', tikect_id=ticket.id)
         
         try:
             nuevo_agente = Agentes.objects.get(id=nuevo_agente_id)
@@ -1218,12 +1317,15 @@ def reasignar_tikect(request, tikect_id):  # Asegurar que sea tikect_id
                 agente_anterior=agente_actual,
                 agente_nuevo=nuevo_agente
             )
+            ticket.agente_asignado = nuevo_agente
+            ticket.save()
+            
             Notificaciones.objects.create(
                 tikect=ticket,
                 agente=nuevo_agente,
-                descripcion=f"Ticket reasignado desde {agente_actual.nombre_usuario}"
+                descripcion=f"Ticket reasignado por {request.user.username}"
             )
-            messages.success(request, f"Ticket reasignado exitosamente a {nuevo_agente.nombre_usuario}")
+            messages.success(request, f"Ticket reasignado a {nuevo_agente.nombre_usuario}")
             return redirect('ver_tikects_asignados_agentes')
         except Exception as e:
             messages.error(request, f"Error al reasignar: {str(e)}")
@@ -1250,13 +1352,12 @@ def crear_tikects_clientes(request):
         titulo = request.POST.get('titulo')
         descripcion = request.POST.get('descripcion')
         servicio_id = request.POST.get('servicio')
-        gerencia_nombre = request.POST.get('gerencia') # Capturamos la gerencia
+        gerencia_nombre = request.POST.get('gerencia')
         usuario = request.user
 
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
         gerencia_obj = Gerencia.objects.filter(nombre=gerencia_nombre).first()
 
-        # Aseguramos que el usuario tenga perfil de Cliente y le asignamos la gerencia
         cliente, _ = Cliente.objects.get_or_create(
             usuario=usuario,
             defaults={
@@ -1265,7 +1366,6 @@ def crear_tikects_clientes(request):
                 'gerencia': gerencia_obj
             }
         )
-        # Si ya existía el cliente pero eligió otra gerencia, la actualizamos
         if gerencia_obj and cliente.gerencia != gerencia_obj:
             cliente.gerencia = gerencia_obj
             cliente.save()
@@ -1279,18 +1379,30 @@ def crear_tikects_clientes(request):
         )
 
         try:
-            asignacion = AsignacionTikects.objects.get(servicio=servicio)
-            if asignacion.agente_actual:
+            generico = AgenteGenerico.objects.get(servicio=servicio)
+            if generico.agente_actual:
+                agente_destino = generico.agente_actual
+                nuevo_tikect.agente_asignado = agente_destino
+                nuevo_tikect.save()
+                AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente_destino)
                 Notificaciones.objects.create(
                     tikect=nuevo_tikect,
-                    descripcion=f"Nuevo ticket '{titulo}'",
+                    descripcion=f"Ticket automático asignado: '{titulo}'",
                     usuario_creador=usuario,
-                    agente=asignacion.agente_actual
+                    agente=agente_destino
                 )
-        except:
+        except AgenteGenerico.DoesNotExist:
             pass
 
-        return redirect('ver_mis_tikects')
+        # REDIRECCIÓN BLINDADA
+        agente_actual = getattr(request.user, 'agente', getattr(request.user, 'agentes', None))
+        if request.user.is_superuser:
+            return redirect('ver_tikects')
+        elif agente_actual:
+            return redirect('ver_tikects_asignados_agentes')
+        else:
+            return redirect('ver_mis_tikects')
+            
     return redirect('crear_tikects_clientes')
 
 @login_required
@@ -1306,13 +1418,12 @@ def crear_tikects(request):
         titulo = request.POST.get('titulo')
         descripcion = request.POST.get('descripcion')
         servicio_id = request.POST.get('servicio')
-        gerencia_nombre = request.POST.get('gerencia') # Capturamos la gerencia
+        gerencia_nombre = request.POST.get('gerencia')
         usuario = request.user
 
         servicio = get_object_or_404(Tickets_Servicios, id=servicio_id)
         gerencia_obj = Gerencia.objects.filter(nombre=gerencia_nombre).first()
 
-        # Vinculamos la gerencia al perfil del usuario que crea el ticket
         cliente, _ = Cliente.objects.get_or_create(
             usuario=usuario,
             defaults={
@@ -1333,23 +1444,27 @@ def crear_tikects(request):
             cliente=cliente,
         )
 
-        # Disparar notificación al agente encargado del servicio (si existe)
         try:
-            asignacion = AsignacionTikects.objects.get(servicio=servicio)
-            if asignacion.agente_actual:
+            generico = AgenteGenerico.objects.get(servicio=servicio)
+            if generico.agente_actual:
+                agente_destino = generico.agente_actual
+                nuevo_tikect.agente_asignado = agente_destino
+                nuevo_tikect.save()
+                AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente_destino)
                 Notificaciones.objects.create(
                     tikect=nuevo_tikect,
-                    descripcion=f"Nuevo ticket '{titulo}'",
+                    descripcion=f"Ticket automático asignado: '{titulo}'",
                     usuario_creador=usuario,
-                    agente=asignacion.agente_actual
+                    agente=agente_destino
                 )
-        except:
+        except AgenteGenerico.DoesNotExist:
             pass
 
-        # REDIRECCIÓN DINÁMICA BASADA EN EL ROL DEL USUARIO
+        # REDIRECCIÓN BLINDADA
+        agente_actual = getattr(request.user, 'agente', getattr(request.user, 'agentes', None))
         if request.user.is_superuser:
             return redirect('ver_tikects')
-        elif hasattr(request.user, 'agente'):
+        elif agente_actual:
             return redirect('ver_tikects_asignados_agentes')
         else:
             return redirect('ver_mis_tikects')
@@ -1513,14 +1628,22 @@ def exportar_tikects_pdf(request):
 # PERMISOS & NOTIFICACIONES
 # ============================================
 
+@login_required
 def check_notifications(request):
-    if request.user.is_authenticated:
-        agente = getattr(request.user, 'agente', None)
-        if agente:
-            nuevas = Notificaciones.objects.filter(agente=agente, leida=False)
-            notificaciones = [{'tikect_id': n.tikect.id, 'descripcion': n.descripcion} for n in nuevas]
-            return JsonResponse({'new_notifications': nuevas.exists(), 'notifications': notificaciones})
-    return JsonResponse({'new_notifications': False, 'notifications': []})
+    # Detección segura del agente
+    agente = getattr(request.user, 'agente', getattr(request.user, 'agentes', None))
+    
+    if agente:
+        nuevas = Notificaciones.objects.filter(agente=agente, leida=False)
+        notificaciones = [{'tikect_id': n.tikect.id, 'descripcion': n.descripcion} for n in nuevas]
+        
+        return JsonResponse({
+            'new_notifications': nuevas.exists(),
+            'count': nuevas.count(), # Agregamos el contador
+            'notifications': notificaciones
+        })
+        
+    return JsonResponse({'new_notifications': False, 'count': 0, 'notifications': []})
 
 def password_reset_view(request):
     return render(request, 'password_reset.html', {'step': 'form'})
@@ -1530,21 +1653,18 @@ def api_detalle_ticket(request, tikect_id):
     """Devuelve el HTML parcial del detalle del ticket para inyectar en modal."""
     tikect = get_object_or_404(Tickets.objects.select_related('usuario', 'servicio', 'cliente', 'cerrado_por_agente'), id=tikect_id)
     
-    # Obtener el agente de forma segura (evita error 500 si no existe)
-    agente_actual = None
-    try:
-        agente_actual = request.user.agente
-    except:
-        pass
+    # Búsqueda infalible del agente
+    agente_actual = Agentes.objects.filter(usuario=request.user).first()
 
-    if not (request.user.is_superuser or agente_actual) and tikect.usuario != request.user:
+    # Verificar permisos: Superusuario OR es agente OR es el creador del ticket
+    if not request.user.is_superuser and not agente_actual and tikect.usuario != request.user:
         return HttpResponseBadRequest("No tiene permiso para ver este ticket.")
 
     reasignaciones = ReasignacionTikects.objects.filter(tikect=tikect).select_related('agente_anterior__usuario', 'agente_nuevo__usuario')
     reasignado = False
-    if reasignaciones.exists():
+    if reasignaciones.exists() and agente_actual:
         agente_nuevo = reasignaciones.last().agente_nuevo
-        if agente_actual and agente_nuevo == agente_actual:
+        if agente_nuevo == agente_actual:
             reasignado = True
 
     context = {
@@ -1556,13 +1676,15 @@ def api_detalle_ticket(request, tikect_id):
 
 @login_required
 def api_reasignar_ticket(request, tikect_id):
-    """Devuelve el HTML parcial o procesa la reasignación vía AJAX."""
     ticket = get_object_or_404(Tickets.objects.select_related('servicio', 'usuario'), id=tikect_id)
     
-    try:
-        agente_actual = Agentes.objects.get(usuario=request.user)
-    except Agentes.DoesNotExist:
+    agente_actual = Agentes.objects.filter(usuario=request.user).first()
+
+    if not request.user.is_superuser and not agente_actual:
         return HttpResponseBadRequest("No tienes permisos para reasignar tickets.")
+
+    if ticket.estado == 'cerrado':
+        return JsonResponse({'status': 'error', 'message': 'El ticket ya fue cerrado y no puede ser reasignado.'}, status=400)
 
     if request.method == 'POST':
         nuevo_agente_id = request.POST.get('nuevo_agente')
@@ -1574,18 +1696,60 @@ def api_reasignar_ticket(request, tikect_id):
                     agente_anterior=agente_actual,
                     agente_nuevo=nuevo_agente
                 )
+                ticket.agente_asignado = nuevo_agente
+                ticket.save()
+                
                 return JsonResponse({'status': 'success', 'message': 'Ticket reasignado exitosamente'})
             except Exception as e:
                 return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
         return JsonResponse({'status': 'error', 'message': 'Agente no válido'}, status=400)
 
-    grupo_agente_actual = Agentes_Por_Grupos.objects.filter(agente=agente_actual).first()
-    agentes_grupo = []
-    if grupo_agente_actual:
-        agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo=grupo_agente_actual.grupo).exclude(id=agente_actual.id)
+    # LÓGICA DE COMPAÑEROS DE GRUPO (Ajax)
+    if request.user.is_superuser:
+        agentes_grupo = Agentes.objects.exclude(id=agente_actual.id) if agente_actual else Agentes.objects.all()
+    else:
+        grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
+        if grupos_del_agente:
+            agentes_grupo = Agentes.objects.filter(
+                agentes_por_grupos__grupo__in=grupos_del_agente
+            ).exclude(id=agente_actual.id).distinct()
+        else:
+            agentes_grupo = []
 
     context = {
         'tikect': ticket,
         'agentes_grupo': agentes_grupo
     }
     return render(request, 'tickets/partials/_reasignar_modal.html', context)
+
+@login_required
+def limpiar_notificaciones(request):
+    agente_actual = getattr(request.user, 'agente', getattr(request.user, 'agentes', None))
+    if agente_actual:
+        Notificaciones.objects.filter(agente=agente_actual, leida=False).update(leida=True)
+    return JsonResponse({'status': 'success'})
+
+@superuser_required
+@login_required
+def configuracion_apariencia(request):
+    config, created = ConfiguracionApariencia.objects.get_or_create(id=1)
+
+    if request.method == 'POST':
+        config.email_soporte = request.POST.get('email_soporte', '').strip()
+        config.telefono_soporte = request.POST.get('telefono_soporte', '').strip()
+        
+        # VERIFICAR SI SE PIDIÓ ELIMINAR EL ÍCONO
+        if request.POST.get('eliminar_icono') == '1':
+            if config.icono_sistema:
+                config.icono_sistema.delete(save=False) # Borra el archivo físico
+            config.icono_sistema = None
+        # Si no se eliminó, revisamos si se subió uno nuevo
+        elif 'icono_sistema' in request.FILES:
+            config.icono_sistema = request.FILES['icono_sistema']
+            
+        config.save()
+        
+        messages.success(request, 'Configuración de apariencia y contacto actualizada con éxito.')
+        return redirect('configuracion_apariencia')
+
+    return render(request, 'configuracion/apariencia.html', {'config': config})
