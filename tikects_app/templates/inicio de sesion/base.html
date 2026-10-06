@@ -157,6 +157,18 @@
             const campanaLink = document.getElementById('notifDropdown');
             let notificacionesActuales = parseInt("{{ notificaciones|length|default:0 }}");
 
+            // --- DESBLOQUEO DE AUDIO (Políticas de Autoplay) ---
+            let audioDesbloqueado = false;
+            document.body.addEventListener('click', function() {
+                if (!audioDesbloqueado) {
+                    sonido.play().then(() => {
+                        sonido.pause();
+                        sonido.currentTime = 0;
+                        audioDesbloqueado = true;
+                    }).catch(() => {});
+                }
+            }, { once: true });
+
             // Función global para limpiar notificaciones
             window.limpiarNotificaciones = function(e) {
                 e.preventDefault();
@@ -164,18 +176,16 @@
                 
                 fetch('{% url "limpiar_notificaciones" %}')
                     .then(() => {
-                        // 1. Redibujar el menú a vacío
                         const dropdownMenu = document.querySelector('#notifDropdown + .dropdown-menu');
                         if (dropdownMenu) {
                             dropdownMenu.innerHTML = '<li class="px-3 py-2 bg-light fw-bold border-bottom tp-caption text-uppercase d-flex justify-content-between align-items-center"><span>Notificaciones</span></li><li class="text-center py-4 tp-caption">No hay tareas pendientes</li>';
                         }
                         
-                        // 2. Destruir la burbuja buscando directamente en el DOM
                         const burbujas = document.querySelectorAll('.tp-badge-notification');
                         burbujas.forEach(burbuja => burbuja.remove());
                         
-                        // 3. Reiniciar el contador a 0
                         notificacionesActuales = 0;
+                        localStorage.setItem('ultimasNotificaciones', JSON.stringify([]));
                     })
                     .catch(error => console.log('Error limpiando notificaciones'));
             };
@@ -184,14 +194,22 @@
                 fetch('{% url "check_notifications" %}') 
                     .then(response => response.json())
                     .then(data => {
-                        // Si hay un cambio en el número (sube o baja), redibujamos el menú
-                        if (data.count !== notificacionesActuales) {
+                        // Comparación por IDs, no solo por conteo
+                        const nuevosIds = data.notifications.map(n => n.tikect_id).sort();
+                        const idsAnteriores = JSON.parse(localStorage.getItem('ultimasNotificaciones') || '[]');
+                        
+                        // ¿Hay alguna notificación nueva que no estuviera en el ciclo anterior?
+                        const hayNuevasReales = nuevosIds.some(id => !idsAnteriores.includes(id));
+
+                        if (data.count !== notificacionesActuales || hayNuevasReales) {
                             
-                            // Si subió, suena la campana
-                            if (data.count > notificacionesActuales) {
-                                sonido.play().catch(() => {});
+                            // Reproducir si hay notificaciones genuinamente nuevas
+                            if (hayNuevasReales) {
+                                sonido.play().catch(e => console.log('Bloqueado por el navegador (haga clic en la pantalla)'));
                             }
                             
+                            localStorage.setItem('ultimasNotificaciones', JSON.stringify(nuevosIds));
+
                             // Actualizamos la burbuja
                             if (badgeCampana) {
                                 badgeCampana.textContent = data.count;
@@ -226,6 +244,7 @@
                     })
                     .catch(() => {});
             }
+            // Revisar cada 10 segundos
             setInterval(revisarNotificaciones, 10000);
         });
     </script>

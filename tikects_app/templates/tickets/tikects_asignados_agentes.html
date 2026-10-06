@@ -108,9 +108,12 @@
                                     </a>
                                     
                                     {% if tikect.estado != 'cerrado' %}
-                                        <a href="{% url 'reasignar_tikect' tikect.id %}" class="tp-action-btn warning btn-reasignar-modal" data-id="{{ tikect.id }}" title="Reasignar caso">
-                                            <i class="fas fa-exchange-alt"></i>
-                                        </a>
+                                        <!-- Enlace directo seguro para Reasignar -->
+                                        {% if es_superusuario or tikect.servicio.id in servicios_permitidos %}
+                                            <button type="button" class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#reasignarModal{{ tikect.id }}" title="Reasignar" style="padding: 0.25rem 0.5rem; display: inline-flex; align-items: center; justify-content: center; height: 32px; width: 32px; border-radius: 6px;">
+                                                <i class="fas fa-exchange-alt" style="font-size: 0.85rem; color: #fff;"></i>
+                                            </button>
+                                        {% endif %}
                                         
                                         <button type="button" class="tp-action-btn success" data-bs-toggle="modal" data-bs-target="#cerrarModal{{ tikect.id }}" title="Cerrar Ticket">
                                             <i class="fas fa-check"></i>
@@ -140,6 +143,35 @@
                                         <div class="modal-footer border-top-0 px-4 pb-4">
                                             <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Abortar</button>
                                             <button type="submit" class="btn btn-primary">Procesar Cierre</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endif %}
+                        <!-- MODAL DE REASIGNACIÓN DE TICKET (Incrustado por fila) -->
+                        {% if es_superusuario or tikect.servicio.id in servicios_permitidos %}
+                        <div class="modal fade" id="reasignarModal{{ tikect.id }}" tabindex="-1" aria-hidden="true">
+                            <div class="modal-dialog modal-dialog-centered">
+                                <div class="modal-content" style="border-radius: var(--tp-rad-lg); border: 1px solid var(--tp-border-strong);">
+                                    <div class="tp-modal-header p-4 d-flex justify-content-between align-items-center">
+                                        <h5 class="modal-title tp-h3 m-0">Reasignar Ticket #{{ tikect.id }}</h5>
+                                        <button type="button" class="btn-close shadow-none" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="post" action="{% url 'reasignar_tikect' tikect.id %}">
+                                        {% csrf_token %}
+                                        <div class="modal-body p-4 text-start">
+                                            <label class="form-label tp-caption fw-bold text-uppercase">Seleccionar Nuevo Especialista <span class="text-danger">*</span></label>
+                                            <select class="form-select tp-input" name="nuevo_agente" required>
+                                                <option value="">Seleccione un compañero...</option>
+                                                {% for agente in agentes_grupo %}
+                                                    <option value="{{ agente.id }}">{{ agente.nombre_usuario }} - {{ agente.nombre }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="modal-footer border-top-0 px-4 pb-4">
+                                            <button type="button" class="btn btn-outline-primary" data-bs-dismiss="modal">Cancelar</button>
+                                            <button type="submit" class="btn btn-primary">Confirmar Traspaso</button>
                                         </div>
                                     </form>
                                 </div>

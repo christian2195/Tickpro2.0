@@ -990,6 +990,26 @@ def ver_tikects_asignados_agentes(request):
     reasignados_ids = set(ReasignacionTikects.objects.filter(agente_nuevo__isnull=False).values_list('tikect_id', flat=True))
     notificaciones = Notificaciones.objects.filter(agente=agente_actual, leida=False)[:5] if agente_actual else []
 
+    # === NUEVA LÓGICA DE RENDIMIENTO PARA BOTÓN REASIGNAR ===
+    servicios_permitidos = []
+    agentes_grupo = [] # <--- NUEVO
+        
+    if user.is_superuser:
+        agentes_grupo = Agentes.objects.all()
+    else:
+        try:
+            agente_actual = Agentes.objects.get(usuario=user)
+            # 1. Servicios que puede reasignar
+            servicios_permitidos = list(AgenteGenerico.objects.filter(
+                agente_actual=agente_actual
+            ).values_list('servicio_id', flat=True))
+                
+            # 2. Compañeros de grupo para llenar el select del modal
+            grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
+            agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo__in=grupos_del_agente).exclude(id=agente_actual.id).distinct()
+        except Agentes.DoesNotExist:
+            pass
+
     context = {
         'tikects': page_obj,
         'total_tikects_agente': total_tikects_agente, # NUEVA VARIABLE ENVIADA AL HTML
@@ -1000,6 +1020,8 @@ def ver_tikects_asignados_agentes(request):
         'notificaciones': notificaciones,
         'servicios': Tickets_Servicios.objects.all(),
         'gerencias': Gerencia.objects.all(),
+        'servicios_permitidos': servicios_permitidos,  # NUEVA VARIABLE PARA BOTÓN REASIGNAR
+        'agentes_grupo': agentes_grupo,  # NUEVA VARIABLE PARA BOTÓN REASIGNAR
     }
     return render(request, 'tickets/tikects_asignados_agentes.html', context)
 
@@ -1031,6 +1053,26 @@ def ver_tikects_asignados_agentes_cerrados(request):
             except:
                 pass
 
+        # === NUEVA LÓGICA DE RENDIMIENTO PARA BOTÓN REASIGNAR ===
+        servicios_permitidos = []
+        agentes_grupo = [] # <--- NUEVO
+        
+        if user.is_superuser:
+            agentes_grupo = Agentes.objects.all()
+        else:
+            try:
+                agente_actual = Agentes.objects.get(usuario=user)
+                # 1. Servicios que puede reasignar
+                servicios_permitidos = list(AgenteGenerico.objects.filter(
+                    agente_actual=agente_actual
+                ).values_list('servicio_id', flat=True))
+                
+                # 2. Compañeros de grupo para llenar el select del modal
+                grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
+                agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo__in=grupos_del_agente).exclude(id=agente_actual.id).distinct()
+            except Agentes.DoesNotExist:
+                pass
+
         context = {
             'tikects': page_obj,
             'tikects_abiertos': tikects_abiertos,
@@ -1039,6 +1081,8 @@ def ver_tikects_asignados_agentes_cerrados(request):
             'es_superusuario': True,
             'servicios': Tickets_Servicios.objects.all(),
             'gerencias': Gerencia.objects.all(),
+            'servicios_permitidos': servicios_permitidos,  # NUEVA VARIABLE PARA BOTÓN REASIGNAR
+            'agentes_grupo': agentes_grupo,  # NUEVA VARIABLE PARA BOTÓN REASIGNAR
         }
         return render(request, 'tickets/tikects_asignados_agentes.html', context)
     
@@ -1126,6 +1170,26 @@ def ver_tikects_asignados_agentes_abiertos(request):
             except:
                 pass
 
+        # === NUEVA LÓGICA DE RENDIMIENTO PARA BOTÓN REASIGNAR ===
+        servicios_permitidos = []
+        agentes_grupo = [] # <--- NUEVO
+        
+        if user.is_superuser:
+            agentes_grupo = Agentes.objects.all()
+        else:
+            try:
+                agente_actual = Agentes.objects.get(usuario=user)
+                # 1. Servicios que puede reasignar
+                servicios_permitidos = list(AgenteGenerico.objects.filter(
+                    agente_actual=agente_actual
+                ).values_list('servicio_id', flat=True))
+                
+                # 2. Compañeros de grupo para llenar el select del modal
+                grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
+                agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo__in=grupos_del_agente).exclude(id=agente_actual.id).distinct()
+            except Agentes.DoesNotExist:
+                pass
+
         context = {
             'tikects': page_obj,
             'tikects_abiertos': tikects_abiertos,
@@ -1134,6 +1198,8 @@ def ver_tikects_asignados_agentes_abiertos(request):
             'es_superusuario': True,
             'servicios': Tickets_Servicios.objects.all(),
             'gerencias': Gerencia.objects.all(),
+            'servicios_permitidos': servicios_permitidos,  # NUEVA VARIABLE PARA BOTÓN REASIGNAR
+            'agentes_grupo': agentes_grupo,  # NUEVA VARIABLE PARA BOTÓN REASIGNAR
         }
         return render(request, 'tickets/tikects_asignados_agentes.html', context)
     
@@ -1228,9 +1294,23 @@ def detalle_tikect(request, tikect_id):
         if agente_actual and agente_nuevo == agente_actual:
             reasignado = True
 
+    # LÓGICA DE PERMISOS: Solo Admin o el Agente Genérico pueden reasignar
+    puede_reasignar = False
+    if request.user.is_superuser:
+        puede_reasignar = True
+    elif agente_actual:
+        try:
+            generico = AgenteGenerico.objects.get(servicio=tikect.servicio)
+            # CORRECCIÓN: Comparar por ID
+            if generico.agente_actual_id == agente_actual.id:
+                puede_reasignar = True
+        except AgenteGenerico.DoesNotExist:
+            puede_reasignar = False
+
     return render(request, 'tickets/detalle_tikect.html', {
         'tikect': tikect,
-        'reasignado': reasignado
+        'reasignado': reasignado,
+        'puede_reasignar': puede_reasignar,
     })
 
 @login_required
@@ -1277,32 +1357,36 @@ def cerrar_tikect(request, tikect_id):
 @login_required
 def reasignar_tikect(request, tikect_id):  
     ticket = get_object_or_404(Tickets, id=tikect_id)  
-    
-    # Búsqueda segura del agente
     agente_actual = Agentes.objects.filter(usuario=request.user).first()
 
-    if not request.user.is_superuser and not agente_actual:
-        messages.error(request, "No tienes permisos para reasignar tickets.")
-        return redirect('detalle_tikect', tikect_id=ticket.id)
+    if not request.user.is_superuser:
+        if not agente_actual:
+            messages.error(request, "No tienes permisos.")
+            return redirect('detalle_tikect', tikect_id=ticket.id)
+        try:
+            generico = AgenteGenerico.objects.get(servicio=ticket.servicio)
+            # CORRECCIÓN: Comparar estrictamente por ID
+            if generico.agente_actual_id != agente_actual.id:
+                messages.error(request, "Solo el agente responsable principal puede reasignar este ticket.")
+                return redirect('detalle_tikect', tikect_id=ticket.id)
+        except AgenteGenerico.DoesNotExist:
+            messages.error(request, "No se puede reasignar porque no hay un responsable de área definido.")
+            return redirect('detalle_tikect', tikect_id=ticket.id)
 
     if ticket.estado == 'cerrado':
         messages.error(request, "No se puede reasignar este ticket porque ya fue cerrado.")
         return redirect('ver_tikects_asignados_agentes')
 
-    # LÓGICA DE COMPAÑEROS DE GRUPO
+    # CORRECCIÓN: Cargar los compañeros del grupo exacto del servicio
     if request.user.is_superuser:
         agentes_grupo = Agentes.objects.exclude(id=agente_actual.id) if agente_actual else Agentes.objects.all()
     else:
-        # 1. Buscamos todos los grupos a los que pertenece el agente
-        grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
-        
-        if grupos_del_agente:
-            # 2. Traemos a todos los agentes que estén en cualquiera de esos grupos (excluyéndolo a él mismo)
-            agentes_grupo = Agentes.objects.filter(
-                agentes_por_grupos__grupo__in=grupos_del_agente
-            ).exclude(id=agente_actual.id).distinct()
+        grupo_servicio = Grupos_Agentes.objects.filter(nombre=ticket.servicio.nombre).first()
+        if grupo_servicio:
+            agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo=grupo_servicio).exclude(id=agente_actual.id).distinct()
         else:
-            agentes_grupo = [] 
+            # Fallback por si acaso
+            agentes_grupo = Agentes.objects.exclude(id=agente_actual.id)
 
     if request.method == 'POST':
         nuevo_agente_id = request.POST.get('nuevo_agente')
@@ -1330,7 +1414,7 @@ def reasignar_tikect(request, tikect_id):
         except Exception as e:
             messages.error(request, f"Error al reasignar: {str(e)}")
 
-    return render(request, 'reasignar_tikects.html', {
+    return render(request, 'tickets/reasignar_tikects.html', {
         'tikect': ticket,
         'agentes_grupo': agentes_grupo
     })
@@ -1378,21 +1462,81 @@ def crear_tikects_clientes(request):
             cliente=cliente,
         )
 
+        # LÓGICA DE ASIGNACIÓN INTELIGENTE (Jerarquía: Agente > Grupo > Global)
+        agente_admin = Agentes.objects.filter(usuario__is_superuser=True).first()
+        asignado_con_exito = False
+
+        # 1. Intentar con Agente Genérico (Usuario Único)
         try:
             generico = AgenteGenerico.objects.get(servicio=servicio)
             if generico.agente_actual:
                 agente_destino = generico.agente_actual
                 nuevo_tikect.agente_asignado = agente_destino
                 nuevo_tikect.save()
+                
                 AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente_destino)
                 Notificaciones.objects.create(
                     tikect=nuevo_tikect,
-                    descripcion=f"Ticket automático asignado: '{titulo}'",
+                    descripcion=f"Nuevo ticket asignado: '{titulo}'",
                     usuario_creador=usuario,
                     agente=agente_destino
                 )
+                if agente_admin and agente_admin != agente_destino:
+                    Notificaciones.objects.create(
+                        tikect=nuevo_tikect,
+                        descripcion=f"Supervisión: Nuevo ticket '{titulo}'",
+                        usuario_creador=usuario,
+                        agente=agente_admin
+                    )
+                asignado_con_exito = True
         except AgenteGenerico.DoesNotExist:
             pass
+
+        # 2. Si no hay Agente Genérico, buscar la Cuadrilla/Grupo de ese servicio
+        if not asignado_con_exito:
+            grupo_servicio = Grupos_Agentes.objects.filter(nombre=servicio.nombre).first()
+            
+            if grupo_servicio:
+                agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo=grupo_servicio)
+                
+                if agentes_grupo.exists():
+                    nuevo_tikect.agente_asignado = agente_admin # Asignación formal de respaldo
+                    nuevo_tikect.save()
+                    
+                    # Distribuir SOLO a los miembros del grupo
+                    for agente in agentes_grupo:
+                        AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente)
+                        Notificaciones.objects.create(
+                            tikect=nuevo_tikect,
+                            descripcion=f"Ticket de Grupo ({servicio.nombre}): '{titulo}'",
+                            usuario_creador=usuario,
+                            agente=agente
+                        )
+                        
+                    # Copia de supervisión al admin si no forma parte del grupo
+                    if agente_admin and not agentes_grupo.filter(id=agente_admin.id).exists():
+                        Notificaciones.objects.create(
+                            tikect=nuevo_tikect,
+                            descripcion=f"Supervisión de Grupo ({servicio.nombre}): '{titulo}'",
+                            usuario_creador=usuario,
+                            agente=agente_admin
+                        )
+                    asignado_con_exito = True
+
+        # 3. Fallback: Difusión Global si no hay ni Agente ni Grupo
+        if not asignado_con_exito:
+            nuevo_tikect.agente_asignado = agente_admin
+            nuevo_tikect.save()
+            
+            todos_los_agentes = Agentes.objects.all()
+            for agente in todos_los_agentes:
+                AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente)
+                Notificaciones.objects.create(
+                    tikect=nuevo_tikect,
+                    descripcion=f"Alerta Global (Sin responsable ni grupo): '{titulo}'",
+                    usuario_creador=usuario,
+                    agente=agente
+                )
 
         # REDIRECCIÓN BLINDADA
         agente_actual = getattr(request.user, 'agente', getattr(request.user, 'agentes', None))
@@ -1444,21 +1588,81 @@ def crear_tikects(request):
             cliente=cliente,
         )
 
+        # LÓGICA DE ASIGNACIÓN INTELIGENTE (Jerarquía: Agente > Grupo > Global)
+        agente_admin = Agentes.objects.filter(usuario__is_superuser=True).first()
+        asignado_con_exito = False
+
+        # 1. Intentar con Agente Genérico (Usuario Único)
         try:
             generico = AgenteGenerico.objects.get(servicio=servicio)
             if generico.agente_actual:
                 agente_destino = generico.agente_actual
                 nuevo_tikect.agente_asignado = agente_destino
                 nuevo_tikect.save()
+                
                 AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente_destino)
                 Notificaciones.objects.create(
                     tikect=nuevo_tikect,
-                    descripcion=f"Ticket automático asignado: '{titulo}'",
+                    descripcion=f"Nuevo ticket asignado: '{titulo}'",
                     usuario_creador=usuario,
                     agente=agente_destino
                 )
+                if agente_admin and agente_admin != agente_destino:
+                    Notificaciones.objects.create(
+                        tikect=nuevo_tikect,
+                        descripcion=f"Supervisión: Nuevo ticket '{titulo}'",
+                        usuario_creador=usuario,
+                        agente=agente_admin
+                    )
+                asignado_con_exito = True
         except AgenteGenerico.DoesNotExist:
             pass
+
+        # 2. Si no hay Agente Genérico, buscar la Cuadrilla/Grupo de ese servicio
+        if not asignado_con_exito:
+            grupo_servicio = Grupos_Agentes.objects.filter(nombre=servicio.nombre).first()
+            
+            if grupo_servicio:
+                agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo=grupo_servicio)
+                
+                if agentes_grupo.exists():
+                    nuevo_tikect.agente_asignado = agente_admin # Asignación formal de respaldo
+                    nuevo_tikect.save()
+                    
+                    # Distribuir SOLO a los miembros del grupo
+                    for agente in agentes_grupo:
+                        AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente)
+                        Notificaciones.objects.create(
+                            tikect=nuevo_tikect,
+                            descripcion=f"Ticket de Grupo ({servicio.nombre}): '{titulo}'",
+                            usuario_creador=usuario,
+                            agente=agente
+                        )
+                        
+                    # Copia de supervisión al admin si no forma parte del grupo
+                    if agente_admin and not agentes_grupo.filter(id=agente_admin.id).exists():
+                        Notificaciones.objects.create(
+                            tikect=nuevo_tikect,
+                            descripcion=f"Supervisión de Grupo ({servicio.nombre}): '{titulo}'",
+                            usuario_creador=usuario,
+                            agente=agente_admin
+                        )
+                    asignado_con_exito = True
+
+        # 3. Fallback: Difusión Global si no hay ni Agente ni Grupo
+        if not asignado_con_exito:
+            nuevo_tikect.agente_asignado = agente_admin
+            nuevo_tikect.save()
+            
+            todos_los_agentes = Agentes.objects.all()
+            for agente in todos_los_agentes:
+                AsignacionTikects.objects.create(tikect=nuevo_tikect, agente=agente)
+                Notificaciones.objects.create(
+                    tikect=nuevo_tikect,
+                    descripcion=f"Alerta Global (Sin responsable ni grupo): '{titulo}'",
+                    usuario_creador=usuario,
+                    agente=agente
+                )
 
         # REDIRECCIÓN BLINDADA
         agente_actual = getattr(request.user, 'agente', getattr(request.user, 'agentes', None))
@@ -1526,7 +1730,9 @@ def tikects_estadisticas(request):
         'porcentaje_cerrados': porcentaje_cerrados,
         'tiempo_promedio': tiempo_promedio,
         'tickets_por_prioridad': tickets_por_prioridad,
-        'servicios': list(servicios),
+        # CAMBIAMOS ESTO:
+        'servicios_chart': list(servicios), # Mantenemos la data para el gráfico
+        'servicios': Tickets_Servicios.objects.all(), # AÑADIMOS la lista completa para los Selects
         'tikects_por_dia_cerrados': list(tikects_por_dia_cerrados),
         'tikects_por_mes_cerrados': list(tikects_por_mes_cerrados),
         'tikects_por_semana_cerrados': list(tikects_por_semana_cerrados),
@@ -1541,49 +1747,93 @@ def tikects_estadisticas(request):
 @superuser_required
 @login_required
 def exportar_tikects_excel(request):
-    servicio_seleccionado = request.GET.get('servicio', 'Todo')
-    if servicio_seleccionado == 'Todo':
-        tikects = Tickets.objects.filter(estado='cerrado')
-    else:
-        tikects = Tickets.objects.filter(estado='cerrado', servicio__nombre=servicio_seleccionado)
+    servicio = request.GET.get('servicio', 'Todo')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
+
+    # 1. Consulta base
+    tikects = Tickets.objects.all().order_by('-fecha_creacion')
+    
+    if servicio != 'Todo':
+        tikects = tikects.filter(servicio__nombre=servicio)
+        
+    # 2. Aplicar filtro de fechas si el usuario las seleccionó
+    if fecha_inicio:
+        tikects = tikects.filter(fecha_creacion__date__gte=fecha_inicio)
+    if fecha_fin:
+        tikects = tikects.filter(fecha_creacion__date__lte=fecha_fin)
 
     wb = openpyxl.Workbook()
     ws = wb.active
     ws.title = "Tickets Cerrados"
 
-    headers = ['ID', 'Título', 'Descripción', 'Usuario', 'Servicio', 'Fecha Creación', 'Fecha Cierre', 'Solución', 'Agente que cerró', 'Gerencia']
+    # 1. DEFINIR LOS 13 ENCABEZADOS EXACTOS
+    headers = [
+        'ID', 
+        'Título', 
+        'Estado', 
+        'Fecha Creación', 
+        'Fecha Actualización', 
+        'Usuario Creador', 
+        'Agente Asignado', 
+        'Servicio', 
+        'Cliente', 
+        'Agente que Cerró', 
+        'Fecha Cierre', 
+        'Solución'
+    ]
     ws.append(headers)
 
+    # 2. INTRODUCIR LOS 12 DATOS EN EL MISMO ORDEN EXACTO
     for t in tikects:
-        ws.append([
+        row = [
             t.id,
             t.titulo,
-            t.descripcion,
+            t.get_estado_display(),
+            t.fecha_creacion.replace(tzinfo=None) if t.fecha_creacion else '',
+            t.fecha_actualizacion.replace(tzinfo=None) if t.fecha_actualizacion else '',
             t.usuario.username if t.usuario else '',
-            t.servicio.nombre if t.servicio else '',
-            t.fecha_creacion.strftime('%Y-%m-%d %H:%M') if t.fecha_creacion else '',
-            t.fecha_cierre.strftime('%Y-%m-%d %H:%M') if t.fecha_cierre else '',
-            t.descripcion_solucion or '',
-            t.cerrado_por_agente.username if t.cerrado_por_agente else '',
-            t.gerencia or ''
-        ])
+            t.agente_asignado.nombre_usuario if t.agente_asignado else 'Sin Asignar',
+            t.servicio.nombre if t.servicio else 'Sin Servicio',
+            t.cliente.nombre if t.cliente else 'Sin Cliente',
+            t.cerrado_por_agente.nombre_usuario if t.cerrado_por_agente else '',
+            t.fecha_cierre.replace(tzinfo=None) if t.fecha_cierre else '',
+            t.descripcion_solucion if t.descripcion_solucion else ''
+        ]
+        ws.append(row)
+
+    fecha_hoy = datetime.now().strftime('%d-%m-%Y')
+    nombre_archivo = f"Reporte_Tickets_{fecha_hoy}.xlsx"
 
     response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
-    response['Content-Disposition'] = f'attachment; filename=tickets_cerrados_{servicio_seleccionado}.xlsx'
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
     wb.save(response)
     return response
 
 @superuser_required
 @login_required
 def exportar_tikects_pdf(request):
-    servicio_seleccionado = request.GET.get('servicio', 'Todo')
-    if servicio_seleccionado == 'Todo':
-        tikects = Tickets.objects.filter(estado='cerrado')
-    else:
-        tikects = Tickets.objects.filter(estado='cerrado', servicio__nombre=servicio_seleccionado)
+    servicio = request.GET.get('servicio', 'Todo')
+    fecha_inicio = request.GET.get('fecha_inicio')
+    fecha_fin = request.GET.get('fecha_fin')
 
-    response = HttpResponse(content_type='application/pdf')
-    response['Content-Disposition'] = f'attachment; filename=tickets_cerrados_{servicio_seleccionado}.pdf'
+    # 1. Consulta base
+    tikects = Tickets.objects.all().order_by('-fecha_creacion')
+    
+    if servicio != 'Todo':
+        tikects = tikects.filter(servicio__nombre=servicio)
+        
+    # 2. Aplicar filtro de fechas si el usuario las seleccionó
+    if fecha_inicio:
+        tikects = tikects.filter(fecha_creacion__date__gte=fecha_inicio)
+    if fecha_fin:
+        tikects = tikects.filter(fecha_creacion__date__lte=fecha_fin)
+
+    fecha_hoy = datetime.now().strftime('%d-%m-%Y')
+    nombre_archivo = f"Reporte_Tickets_{fecha_hoy}.pdf"
+
+    response = HttpResponse(content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+    response['Content-Disposition'] = f'attachment; filename="{nombre_archivo}"'
 
     c = canvas.Canvas(response, pagesize=letter)
     width, height = letter
@@ -1591,7 +1841,7 @@ def exportar_tikects_pdf(request):
     line_height = 14
 
     c.setFont("Helvetica-Bold", 14)
-    c.drawString(x, y, f"Tickets Cerrados - {servicio_seleccionado}")
+    c.drawString(x, y, f"Tickets Cerrados - {servicio}")
     y -= 30
 
     c.setFont("Helvetica-Bold", 10)
@@ -1667,21 +1917,42 @@ def api_detalle_ticket(request, tikect_id):
         if agente_nuevo == agente_actual:
             reasignado = True
 
+    # LÓGICA DE PERMISOS: Solo Admin o el Agente Genérico pueden reasignar
+    puede_reasignar = False
+    if request.user.is_superuser:
+        puede_reasignar = True
+    elif agente_actual:
+        try:
+            generico = AgenteGenerico.objects.get(servicio=tikect.servicio)
+            # CORRECCIÓN: Comparar por ID
+            if generico.agente_actual_id == agente_actual.id:
+                puede_reasignar = True
+        except AgenteGenerico.DoesNotExist:
+            puede_reasignar = False
+
     context = {
         'tikect': tikect,
         'reasignado': reasignado,
-        'reasignaciones': reasignaciones
+        'reasignaciones': reasignaciones,
+        'puede_reasignar': puede_reasignar,
     }
     return render(request, 'tickets/partials/_detalle_modal.html', context)
 
 @login_required
 def api_reasignar_ticket(request, tikect_id):
     ticket = get_object_or_404(Tickets.objects.select_related('servicio', 'usuario'), id=tikect_id)
-    
     agente_actual = Agentes.objects.filter(usuario=request.user).first()
 
-    if not request.user.is_superuser and not agente_actual:
-        return HttpResponseBadRequest("No tienes permisos para reasignar tickets.")
+    if not request.user.is_superuser:
+        if not agente_actual:
+            return HttpResponseBadRequest("No tienes permisos.")
+        try:
+            generico = AgenteGenerico.objects.get(servicio=ticket.servicio)
+            # CORRECCIÓN: Comparar estrictamente por ID
+            if generico.agente_actual_id != agente_actual.id:
+                return JsonResponse({'status': 'error', 'message': 'Solo el agente responsable principal puede reasignar.'}, status=403)
+        except AgenteGenerico.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Sin responsable definido para permitir reasignación.'}, status=403)
 
     if ticket.estado == 'cerrado':
         return JsonResponse({'status': 'error', 'message': 'El ticket ya fue cerrado y no puede ser reasignado.'}, status=400)
@@ -1704,17 +1975,15 @@ def api_reasignar_ticket(request, tikect_id):
                 return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
         return JsonResponse({'status': 'error', 'message': 'Agente no válido'}, status=400)
 
-    # LÓGICA DE COMPAÑEROS DE GRUPO (Ajax)
+    # CORRECCIÓN: Cargar los compañeros del grupo exacto del servicio (Ajax)
     if request.user.is_superuser:
         agentes_grupo = Agentes.objects.exclude(id=agente_actual.id) if agente_actual else Agentes.objects.all()
     else:
-        grupos_del_agente = Agentes_Por_Grupos.objects.filter(agente=agente_actual).values_list('grupo', flat=True)
-        if grupos_del_agente:
-            agentes_grupo = Agentes.objects.filter(
-                agentes_por_grupos__grupo__in=grupos_del_agente
-            ).exclude(id=agente_actual.id).distinct()
+        grupo_servicio = Grupos_Agentes.objects.filter(nombre=ticket.servicio.nombre).first()
+        if grupo_servicio:
+            agentes_grupo = Agentes.objects.filter(agentes_por_grupos__grupo=grupo_servicio).exclude(id=agente_actual.id).distinct()
         else:
-            agentes_grupo = []
+            agentes_grupo = Agentes.objects.exclude(id=agente_actual.id)
 
     context = {
         'tikect': ticket,
