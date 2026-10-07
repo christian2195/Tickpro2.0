@@ -206,6 +206,45 @@
                     </tbody>
                 </table>
             </div>
+
+            <!-- PAGINACIÓN DE AGENTES -->
+            {% if tikects_por_agente.has_other_pages %}
+            <div class="d-flex justify-content-center p-3 border-top">
+                <nav aria-label="Navegación de agentes">
+                    <ul class="pagination pagination-sm m-0 shadow-sm">
+                        
+                        {% if tikects_por_agente.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link text-secondary" href="?page={{ tikects_por_agente.previous_page_number }}"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link text-muted"><i class="fas fa-chevron-left" style="font-size: 0.75rem;"></i></span>
+                            </li>
+                        {% endif %}
+
+                        {% for num in tikects_por_agente.paginator.page_range %}
+                            {% if tikects_por_agente.number == num %}
+                                <li class="page-item active"><span class="page-link bg-primary border-primary">{{ num }}</span></li>
+                            {% else %}
+                                <li class="page-item"><a class="page-link text-dark" href="?page={{ num }}">{{ num }}</a></li>
+                            {% endif %}
+                        {% endfor %}
+
+                        {% if tikects_por_agente.has_next %}
+                            <li class="page-item">
+                                <a class="page-link text-secondary" href="?page={{ tikects_por_agente.next_page_number }}"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></a>
+                            </li>
+                        {% else %}
+                            <li class="page-item disabled">
+                                <span class="page-link text-muted"><i class="fas fa-chevron-right" style="font-size: 0.75rem;"></i></span>
+                            </li>
+                        {% endif %}
+                        
+                    </ul>
+                </nav>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>

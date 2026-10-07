@@ -1705,22 +1705,34 @@ def tikects_estadisticas(request):
 
     tikects_por_agente = []
     try:
+        # 1. Obtener IDs ÚNICOS de AGENTES que han cerrado tickets
         agentes_ids = Tickets.objects.filter(estado='cerrado').exclude(cerrado_por_agente__isnull=True).values_list('cerrado_por_agente', flat=True).distinct()
+        
         for agente_id in agentes_ids:
             try:
-                user = User.objects.get(id=agente_id)
+                # 2. Buscar en el modelo AGENTES, no en User
+                agente = Agentes.objects.get(id=agente_id)
+                # Extraemos los datos del User asociado al Agente
+                user = agente.usuario 
+                
                 count = Tickets.objects.filter(estado='cerrado', cerrado_por_agente_id=agente_id).count()
+                
                 tikects_por_agente.append({
                     'cerrado_por_agente__username': user.username,
                     'cerrado_por_agente__first_name': user.first_name,
                     'cerrado_por_agente__last_name': user.last_name,
                     'count': count
                 })
-            except User.DoesNotExist:
+            except Agentes.DoesNotExist:
                 pass
+                
         tikects_por_agente = sorted(tikects_por_agente, key=lambda x: x['count'], reverse=True)
     except Exception as e:
         print(f"Error en estadísticas de agentes: {e}")
+
+    paginator = Paginator(tikects_por_agente, 5) 
+    page_number = request.GET.get('page')
+    page_agentes = paginator.get_page(page_number)
 
     context = {
         'total_tikects': total_tikects,
@@ -1730,13 +1742,14 @@ def tikects_estadisticas(request):
         'porcentaje_cerrados': porcentaje_cerrados,
         'tiempo_promedio': tiempo_promedio,
         'tickets_por_prioridad': tickets_por_prioridad,
-        # CAMBIAMOS ESTO:
-        'servicios_chart': list(servicios), # Mantenemos la data para el gráfico
-        'servicios': Tickets_Servicios.objects.all(), # AÑADIMOS la lista completa para los Selects
+        'servicios_chart': list(servicios), 
+        'servicios': Tickets_Servicios.objects.all(), 
         'tikects_por_dia_cerrados': list(tikects_por_dia_cerrados),
         'tikects_por_mes_cerrados': list(tikects_por_mes_cerrados),
         'tikects_por_semana_cerrados': list(tikects_por_semana_cerrados),
-        'tikects_por_agente': list(tikects_por_agente),
+        
+        # CAMBIAR ESTA ÚLTIMA LÍNEA:
+        'tikects_por_agente': page_agentes, 
     }
     return render(request, 'configuracion/estadisticas.html', context)
 
