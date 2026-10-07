@@ -18,7 +18,7 @@ services:
     volumes:
       - .:/app
     ports:
-      - "8000:8000"
+      - "80:8000"
     environment:
       - DB_NAME=tickpro_db
       - DB_USER=tickpro_user
