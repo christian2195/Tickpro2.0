@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=tickpro_db
+      - POSTGRES_USER=tickpro_user
+      - POSTGRES_PASSWORD=tickpro_pass
+    restart: unless-stopped
+
+  web:
+    build: .
+    # El comando ejecuta las migraciones automáticamente antes de levantar el servidor
+    command: sh -c "python manage.py migrate && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DB_NAME=tickpro_db
+      - DB_USER=tickpro_user
+      - DB_PASSWORD=tickpro_pass
+      - DB_HOST=db
+      - DB_PORT=5432
+    depends_on:
+      - db
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

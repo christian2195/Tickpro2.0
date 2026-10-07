@@ -61,11 +61,11 @@ WSGI_APPLICATION = 'tikects_proyecto.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'tikectsbd',
-        'USER': 'postgres',
-        'PASSWORD': 'erick297',
-        'HOST': '127.0.0.1', # localhost
-        'PORT': '5432',
+        'NAME': os.environ.get('DB_NAME', 'tickpro_db'),
+        'USER': os.environ.get('DB_USER', 'tickpro_user'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', 'tickpro_pass'),
+        'HOST': os.environ.get('DB_HOST', 'db'), # Usa 'db' en docker, 'localhost' si corres fuera
+        'PORT': os.environ.get('DB_PORT', '5432'),
     }
 }
 
