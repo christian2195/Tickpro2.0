@@ -1,7 +1,7 @@
 {% extends 'inicio de sesion/base.html' %}
 {% load static %}
 
-{% block title %}Mis Tickets {% endblock %}
+{% block title %}TickPro 2.0 - Mis Tickets {% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'tikects_app/css/tickets/tikects_vista_lista_cliente.css' %}?v=4">
@@ -53,7 +53,7 @@
         <div class="d-flex justify-content-between align-items-center p-4 bg-white border-bottom" style="border-color: var(--tp-border-strong);">
             <div class="tp-eyebrow m-0">Traza de Incidencias</div>
             <button type="button" class="btn btn-primary btn-sm px-3" data-bs-toggle="modal" data-bs-target="#modalCrearTicket">
-                <i class="fas fa-plus me-2" style="font-size: 0.75rem;"></i>Aperturar Caso
+                <i class="fas fa-plus me-2" style="font-size: 0.75rem;"></i>Nuevo ticket
             </button>
         </div>
         
@@ -65,7 +65,7 @@
                             <th style="width: 8%;">Folio</th>
                             <th style="width: 12%;">Alta</th>
                             <th style="width: 35%;">Asunto</th>
-                            <th style="width: 20%;">Área de Enrutamiento</th>
+                            <th style="width: 20%;">Área</th>
                             <th style="width: 15%;">Progreso</th>
                             <th style="width: 10%;" class="text-end">ACCIÓN</th>
                         </tr>

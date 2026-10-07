@@ -1,7 +1,7 @@
 {% extends 'inicio de sesion/base.html' %}
 {% load static %}
 
-{% block title %}Gestión de Gerencias{% endblock %}
+{% block title %}TickPro 2.0 - Gestión de Gerencias{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'tikects_app/css/configuracion/configuracion.css' %}?v=4">
@@ -22,19 +22,6 @@
 </div>
 
 <div class="container-fluid p-0">
-    {% if messages %}
-        <div class="mb-4">
-            {% for message in messages %}
-                <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}success{% endif %} alert-dismissible fade show tp-alert" role="alert">
-                    <div class="d-flex align-items-center">
-                        <div class="tp-alert-dot bg-{% if message.tags == 'error' %}danger{% else %}success{% endif %}"></div>
-                        <span>{{ message }}</span>
-                    </div>
-                    <button type="button" class="btn-close shadow-none" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            {% endfor %}
-        </div>
-    {% endif %}
 
     <div class="mb-4 d-flex justify-content-end">
         <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modalGerencia" data-mode="crear">
@@ -84,9 +71,6 @@
                             <i class="fas fa-building fa-3x text-muted mb-3 opacity-50"></i>
                             <h5 class="tp-h3">Sistema Vacío</h5>
                             <p class="tp-body mb-4">No se ha modelado la estructura organizativa en el sistema.</p>
-                            <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalGerencia" data-mode="crear">
-                                Inicializar Directorio
-                            </button>
                         </td>
                     </tr>
                     {% endfor %}

@@ -23,9 +23,9 @@
     </div>
     <h2 class="tp-display mt-2 mb-2">
         {% if request.user.is_superuser or request.user.agente %}
-            Administración
+            TickPro 2.0 - Admin
         {% else %}
-            Mis Servicios
+            TickPro 2.0
         {% endif %}
     </h2>
     <p class="tp-body mb-0">Bienvenido, <span class="fw-medium text-dark">{{ request.user.first_name|default:request.user.username }}</span>. {{ now|date:"l, d F Y" }}</p>
@@ -148,25 +148,28 @@
     <!-- Directorio de Contacto (Solo Clientes) -->
     {% if not request.user.is_superuser and not request.user.agente %}
     <div class="tp-section-divider"></div>
-    <div class="mt-2">
-        <div class="tp-eyebrow">DIRECTORIO SOPORTE</div>
-        <div class="row g-4 mt-2">
-            <div class="col-md-4">
-                <div class="card p-4">
-                    <h6 class="tp-caption text-uppercase fw-bold mb-2">Asistencia Telefónica</h6>
-                    <p class="tp-h3 mb-0">(0212) 123-4567</p>
+    <div class="mt-2 mb-5">
+        <div class="tp-eyebrow text-uppercase">Canales de Escalamiento</div>
+        <div class="row g-4 mt-1">
+            <!-- Tarjeta Correo Institucional -->
+            <div class="col-md-6">
+                <div class="card p-4 h-100 border-0 shadow-sm" style="border-radius: var(--tp-rad-lg);">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 48px; height: 48px; background-color: rgba(13, 110, 253, 0.15); color: #0d6efd;">
+                        <i class="fas fa-envelope fs-5"></i>
+                    </div>
+                    <h6 class="tp-caption text-uppercase fw-bold mb-2">Correo Institucional</h6>
+                    <p class="tp-body fw-bold text-dark mb-0 fs-5">{{ apariencia.email_soporte|default:"No configurado" }}</p>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="card p-4">
-                    <h6 class="tp-caption text-uppercase fw-bold mb-2">Correo Electrónico</h6>
-                    <p class="tp-h3 mb-0">soporte@tickpro.com</p>
-                </div>
-            </div>
-            <div class="col-md-4">
-                <div class="card p-4">
-                    <h6 class="tp-caption text-uppercase fw-bold mb-2">Horario de Atención</h6>
-                    <p class="tp-h3 mb-0">Lun-Vie, 8:00 AM - 5:00 PM</p>
+            
+            <!-- Tarjeta Línea Directa -->
+            <div class="col-md-6">
+                <div class="card p-4 h-100 border-0 shadow-sm" style="border-radius: var(--tp-rad-lg);">
+                    <div class="d-flex align-items-center justify-content-center rounded-circle mb-3" style="width: 48px; height: 48px; background-color: rgba(13, 110, 253, 0.15); color: #0d6efd;">
+                        <i class="fas fa-phone-alt fs-5"></i>
+                    </div>
+                    <h6 class="tp-caption text-uppercase fw-bold mb-2">Línea Directa</h6>
+                    <p class="tp-body fw-bold text-dark mb-0 fs-5">{{ apariencia.telefono_soporte|default:"No configurado" }}</p>
                 </div>
             </div>
         </div>

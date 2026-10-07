@@ -89,7 +89,14 @@ def pagina_principal(request):
     except Exception:
         agente = None
         
-    context = {'now': now, 'agente': agente}
+    # --- NUEVO: Extraer la configuración de apariencia ---
+    configuracion, _ = ConfiguracionApariencia.objects.get_or_create(id=1)
+        
+    context = {
+        'now': now, 
+        'agente': agente,
+        'apariencia': configuracion, # Lo pasamos al HTML
+    }
 
     if user.is_superuser or agente:
         notificaciones = Notificaciones.objects.filter(agente=agente, leida=False)[:5] if agente else []
